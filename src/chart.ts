@@ -107,15 +107,23 @@ export function buildLadderChart(o: ChartOptions): string {
       const bottom = y(Math.min(...g.values));
       // はしごの縦レール
       parts.push(`<line class="rail" x1="${cx}" y1="${top}" x2="${cx}" y2="${bottom}" />`);
-      // 各段
+      // 各段。ラベルが重なる場合(値が近い段)は数字を間引いて読めるようにする。
+      const LABEL_GAP = 20;
+      let lastLabelY = Number.POSITIVE_INFINITY;
       for (const v of g.values) {
         const vy = y(v);
         const isExact = showAnswer && g.exactValue === v;
         const rungClass = `rung${isExact ? " is-exact" : ""}`;
         parts.push(
           `<line class="${rungClass}" x1="${cx - colW * 0.26}" y1="${vy}" x2="${cx + colW * 0.26}" y2="${vy}" />`,
-          `<text class="rung-label" x="${cx + colW * 0.3}" y="${vy + 4}">${formatNumber(v)}</text>`,
         );
+        // 値は昇順 = vy は上へ(小さく)動く。間隔が空いた段と一致段だけラベルを出す。
+        if (isExact || lastLabelY - vy >= LABEL_GAP) {
+          parts.push(
+            `<text class="rung-label" x="${cx + colW * 0.3}" y="${vy + 4}">${formatNumber(v)}</text>`,
+          );
+          lastLabelY = vy;
+        }
       }
     }
 
@@ -144,7 +152,7 @@ export function buildLadderChart(o: ChartOptions): string {
     parts.push(
       `<g class="answer-line">`,
       `<line x1="${plotLeft}" y1="${ay}" x2="${plotLeft + plotW}" y2="${ay}" />`,
-      `<text x="${plotLeft + plotW}" y="${ay - 10}" text-anchor="end">正解 ${formatNumber(answer)}</text>`,
+      `<text x="${plotLeft + 8}" y="${ay - 12}" text-anchor="start">正解 ${formatNumber(answer)}</text>`,
       `</g>`,
     );
   }
