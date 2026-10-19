@@ -96,9 +96,9 @@ function renderReveal(state: AppState): string {
   const answerVal = round.answerOverride ?? (q ? q.answer : null);
   const showAns = state.projection.answerRevealed;
 
-  // 16:9 に近い比率にしてはしごが画面幅いっぱいに広がるようにする。
+  // viewBox を縦に大きく取り、固定px のラベルに対してはしごを大きく見せる。
   const groupCount = state.settings.groups.length;
-  const chartHeight = 720;
+  const chartHeight = 860;
   const chartWidth = Math.max(Math.round((chartHeight * 16) / 9), groupCount * 190);
 
   const chart = buildLadderChart({

@@ -431,12 +431,12 @@ body.view-projection #app {
 
 .proj-reveal {
   justify-content: flex-start;
-  padding: 2vmin 3vmin;
+  padding: 1vmin 2.5vmin;
 }
 .proj-reveal .round-no {
   font-family: var(--font-display);
-  font-size: 3vmin;
-  margin: 0 0 1vmin;
+  font-size: 2.4vmin;
+  margin: 0 0 0.4vmin;
   color: var(--accent);
 }
 .chart-wrap {
@@ -452,7 +452,7 @@ body.view-projection #app {
   display: flex;
   align-items: center;
   gap: 2vmin;
-  margin-top: 1.5vmin;
+  margin-top: 0.8vmin;
 }
 .proj-footer-row .proj-badges {
   flex: 0 0 auto;

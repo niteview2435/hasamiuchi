@@ -27,7 +27,7 @@ export interface ChartOptions {
   height: number;
 }
 
-const MARGIN = { top: 48, right: 24, bottom: 96, left: 92 };
+const MARGIN = { top: 24, right: 24, bottom: 80, left: 92 };
 
 function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
@@ -64,7 +64,7 @@ export function buildLadderChart(o: ChartOptions): string {
 
   const logMin = Math.log10(dataMin);
   const logMax = Math.log10(dataMax);
-  const pad = (logMax - logMin) * 0.1 || 0.3;
+  const pad = (logMax - logMin) * 0.05 || 0.3;
   const rangeMin = logMin - pad;
   const rangeMax = logMax + pad;
 
