@@ -53,7 +53,24 @@ describe("computeTeamScore", () => {
     expect(r.placement).toEqual({ kind: "exact", index: 1 });
     expect(r.score).toBe(30);
     expect(r.pitari).toBe(true);
+    expect(r.pitariValue).toBe(200);
     expect(r.ratio).toBe(1);
+  });
+
+  it("ピタリは正解を単位に丸めた値への一致で成立(真の正解が半端でも可)", () => {
+    const cfg = { c: 20, pitariBonus: 20, unit: 1000 };
+    const r = computeTeamScore([230000, 235000, 240000], 234700, cfg);
+    expect(r.pitari).toBe(true);
+    expect(r.pitariValue).toBe(235000); // 234700 → 235000 に丸め
+    // 段の判定は真の正解 234700 で行う(230000 < 234700 < 235000)
+    expect(r.placement.kind).toBe("band");
+  });
+
+  it("丸めた値がはしごに無ければピタリにならない", () => {
+    const cfg = { c: 20, pitariBonus: 20, unit: 1000 };
+    const r = computeTeamScore([230000, 236000, 240000], 234700, cfg);
+    expect(r.pitari).toBe(false);
+    expect(r.pitariValue).toBeNull();
   });
 
   it("a > x_m ははしごの外・上で0点", () => {

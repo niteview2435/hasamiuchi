@@ -2,7 +2,7 @@
 
 import { computeTeamScore, type TeamScore } from "./scoring";
 import type { AppState, Round } from "./types";
-import { roundAnswer } from "./types";
+import { roundAnswer, roundQuestion } from "./types";
 
 export interface GroupResult {
   name: string;
@@ -18,7 +18,11 @@ export interface GroupResult {
 
 export function computeRoundResults(state: AppState, round: Round): GroupResult[] {
   const answer = roundAnswer(state, round);
-  const config = { c: state.settings.c, pitariBonus: state.settings.pitariBonus };
+  const config = {
+    c: state.settings.c,
+    pitariBonus: state.settings.pitariBonus,
+    unit: roundQuestion(state, round)?.unit ?? 1,
+  };
 
   return state.settings.groups.map((name, gi) => {
     const values = (round.ladders[gi] ?? []).filter((v): v is number => v != null);

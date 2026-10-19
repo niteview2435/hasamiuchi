@@ -35,6 +35,7 @@ function toChartGroup(r: GroupResult): ChartGroup {
   if (!s) return base;
   base.score = s.score;
   base.ratio = s.ratio;
+  base.exactValue = s.pitariValue; // ピタリの段を赤く強調する
   switch (s.placement.kind) {
     case "below":
     case "above":
@@ -44,7 +45,6 @@ function toChartGroup(r: GroupResult): ChartGroup {
       base.band = { lower: s.placement.lower, upper: s.placement.upper };
       break;
     case "exact":
-      base.exactValue = r.values[s.placement.index] ?? null;
       break;
   }
   return base;
