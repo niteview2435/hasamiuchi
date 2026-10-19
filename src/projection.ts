@@ -54,28 +54,31 @@ function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
 }
 
-/** 正解付近のズーム窓。正解を挟んだ段とピタリ段の値域に合わせて絞る。 */
+/**
+ * 正解付近のズーム窓。正解に「最も近い段」(= 一番きつい挟み)を基準にする。
+ * 広く挟んだチームの遠い段に引っ張られて窓が広がらないようにする。
+ */
 function focusWindow(results: GroupResult[], answer: number): { min: number; max: number } {
-  const vals: number[] = [answer];
+  let nearBelow = Number.NEGATIVE_INFINITY; // 正解以下で最も高い段
+  let nearAbove = Number.POSITIVE_INFINITY; // 正解以上で最も低い段
   for (const r of results) {
-    const s = r.score;
-    if (!s) continue;
-    if (s.placement.kind === "band") {
-      vals.push(s.placement.lower, s.placement.upper);
-    } else if (s.placement.kind === "exact") {
-      const v = r.values[s.placement.index];
-      if (v != null) vals.push(v);
+    for (const v of r.values) {
+      if (v <= answer && v > nearBelow) nearBelow = v;
+      if (v >= answer && v < nearAbove) nearAbove = v;
     }
-    if (s.pitariValue != null) vals.push(s.pitariValue);
   }
-  let min = Math.min(...vals);
-  let max = Math.max(...vals);
-  // どこも挟んでいない等で潰れたら、正解を中心に適度な窓を作る。
-  if (!(max > min)) {
-    min = answer / 1.5;
-    max = answer * 1.5;
-  }
-  return { min, max };
+  if (!Number.isFinite(nearBelow)) nearBelow = answer;
+  if (!Number.isFinite(nearAbove)) nearAbove = answer;
+
+  // 対数で左右に余白を足して近傍の段も少し見えるようにする。
+  // きつい挟みでも潰れないよう最小の余白を設ける。
+  const logLo = Math.log10(Math.max(nearBelow, 1));
+  const logHi = Math.log10(Math.max(nearAbove, 1));
+  const halfPad = Math.max((logHi - logLo) * 0.8, 0.11);
+  return {
+    min: 10 ** (logLo - halfPad),
+    max: 10 ** (logHi + halfPad),
+  };
 }
 
 function renderBlank(): string {
