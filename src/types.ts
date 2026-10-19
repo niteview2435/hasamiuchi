@@ -14,8 +14,8 @@ export interface Question {
 export interface Settings {
   /** グループ名の配列。長さがグループ数。 */
   groups: string[];
-  /** 走者数 m(デフォルト8)。 */
-  runnerCount: number;
+  /** グループごとの走者数(人数が異なる場合に対応)。長さ = グループ数。デフォルト8。 */
+  runnerCounts: number[];
   /** 得点係数 c(デフォルト20)。 */
   c: number;
   /** ピタリ賞の点数(デフォルト20)。 */
@@ -71,20 +71,18 @@ export function groupLetters(n: number): string[] {
   );
 }
 
-export function makeEmptyRound(groupCount: number, runnerCount: number): Round {
+export function makeEmptyRound(runnerCounts: number[]): Round {
   return {
     questionIndex: null,
     answerOverride: null,
-    ladders: Array.from({ length: groupCount }, () =>
-      Array.from({ length: runnerCount }, () => null),
-    ),
+    ladders: runnerCounts.map((m) => Array.from({ length: m }, () => null)),
   };
 }
 
 /** グループ数・走者数の変更に合わせて、既存の入力を保ったまま ladders を作り直す。 */
-export function resizeRound(round: Round, groupCount: number, runnerCount: number): void {
-  round.ladders = Array.from({ length: groupCount }, (_, gi) =>
-    Array.from({ length: runnerCount }, (_, ri) => round.ladders[gi]?.[ri] ?? null),
+export function resizeRound(round: Round, runnerCounts: number[]): void {
+  round.ladders = runnerCounts.map((m, gi) =>
+    Array.from({ length: m }, (_, ri) => round.ladders[gi]?.[ri] ?? null),
   );
 }
 
@@ -102,12 +100,12 @@ export function roundQuestion(state: AppState, round: Round): Question | null {
 
 export function createDefaultState(): AppState {
   const groups = groupLetters(4);
-  const runnerCount = 8;
+  const runnerCounts = groups.map(() => 8);
   return {
     version: STATE_VERSION,
-    settings: { groups, runnerCount, c: 20, pitariBonus: 20, timerEnabled: true },
+    settings: { groups, runnerCounts, c: 20, pitariBonus: 20, timerEnabled: true },
     questions: [],
-    rounds: [makeEmptyRound(groups.length, runnerCount)],
+    rounds: [makeEmptyRound(runnerCounts)],
     currentRound: 0,
     projection: { screen: "blank", laddersRevealed: false, answerRevealed: false, zoomed: false },
     timer: { durationSec: 180, endsAt: null, pausedRemainingMs: null },

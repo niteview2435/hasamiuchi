@@ -68,7 +68,11 @@ function renderSettings(state: AppState): string {
   const nameInputs = s.groups
     .map(
       (name, i) =>
-        `<label class="field field-inline"><span>G${i + 1}</span><input type="text" data-group-name="${i}" value="${esc(name)}" /></label>`,
+        `<div class="group-row">
+           <span class="g-tag">G${i + 1}</span>
+           <input type="text" data-group-name="${i}" value="${esc(name)}" />
+           <label class="rc">走者数 <input type="number" min="1" max="20" data-group-runners="${i}" value="${s.runnerCounts[i] ?? 8}" /></label>
+         </div>`,
     )
     .join("");
 
@@ -86,13 +90,14 @@ function renderSettings(state: AppState): string {
       <h2>グループ</h2>
       <label class="field"><span>グループ数</span>
         <input type="number" min="1" max="26" data-group-count value="${s.groups.length}" /></label>
-      <div class="group-names">${nameInputs}</div>
+      <label class="field"><span>走者数を一括</span>
+        <input type="number" min="1" max="20" data-runners-all placeholder="全グループに適用" /></label>
+      <div class="group-rows">${nameInputs}</div>
+      <p class="muted">グループごとに走者数(人数)を変えられます。</p>
     </section>
 
     <section class="panel">
       <h2>ルール設定</h2>
-      <label class="field"><span>走者数 m</span>
-        <input type="number" min="1" max="20" data-runner-count value="${s.runnerCount}" /></label>
       <label class="field"><span>係数 c</span>
         <input type="number" min="0" step="1" data-c value="${s.c}" /></label>
       <label class="field"><span>ピタリ賞</span>
@@ -161,12 +166,15 @@ function renderInput(state: AppState): string {
   if (!round) return `<p class="muted">ラウンドがありません。</p>`;
   const q = roundQuestion(state, round);
   const unit = q?.unit ?? 1;
-  const m = state.settings.runnerCount;
+  const counts = state.settings.runnerCounts;
+  const maxM = Math.max(1, ...counts);
 
-  const headerCells = Array.from({ length: m }, (_, ri) => `<th>第${ri + 1}走者</th>`).join("");
+  const headerCells = Array.from({ length: maxM }, (_, ri) => `<th>第${ri + 1}走者</th>`).join("");
   const rows = state.settings.groups
     .map((name, gi) => {
-      const cells = Array.from({ length: m }, (_, ri) => {
+      const m = counts[gi] ?? 0;
+      const cells = Array.from({ length: maxM }, (_, ri) => {
+        if (ri >= m) return `<td class="cell-empty"></td>`;
         const v = round.ladders[gi]?.[ri];
         return `<td><input type="number" inputmode="numeric" data-cell data-gi="${gi}" data-ri="${ri}" value="${v ?? ""}" /></td>`;
       }).join("");
@@ -384,9 +392,9 @@ export function mountControl(root: HTMLElement): void {
     main.querySelector<HTMLInputElement>("[data-group-count]")?.addEventListener("change", (e) => {
       const count = Math.max(1, Math.min(26, Number((e.target as HTMLInputElement).value) || 1));
       update((s) => {
-        const next = groupLetters(count).map((def, i) => s.settings.groups[i] ?? def);
-        s.settings.groups = next;
-        for (const r of s.rounds) resizeRound(r, count, s.settings.runnerCount);
+        s.settings.groups = groupLetters(count).map((def, i) => s.settings.groups[i] ?? def);
+        s.settings.runnerCounts = Array.from({ length: count }, (_, i) => s.settings.runnerCounts[i] ?? 8);
+        for (const r of s.rounds) resizeRound(r, s.settings.runnerCounts);
       });
       renderActive();
     });
@@ -398,12 +406,24 @@ export function mountControl(root: HTMLElement): void {
         });
       });
     });
-    main.querySelector<HTMLInputElement>("[data-runner-count]")?.addEventListener("change", (e) => {
-      const m = Math.max(1, Math.min(20, Number((e.target as HTMLInputElement).value) || 1));
-      update((s) => {
-        s.settings.runnerCount = m;
-        for (const r of s.rounds) resizeRound(r, s.settings.groups.length, m);
+    main.querySelectorAll<HTMLInputElement>("[data-group-runners]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const i = Number(input.dataset.groupRunners);
+        const m = Math.max(1, Math.min(20, Number(input.value) || 1));
+        update((s) => {
+          if (s.settings.runnerCounts[i] != null) s.settings.runnerCounts[i] = m;
+          for (const r of s.rounds) resizeRound(r, s.settings.runnerCounts);
+        });
       });
+    });
+    main.querySelector<HTMLInputElement>("[data-runners-all]")?.addEventListener("change", (e) => {
+      const m = Math.max(1, Math.min(20, Number((e.target as HTMLInputElement).value) || 0));
+      if (!m) return;
+      update((s) => {
+        s.settings.runnerCounts = s.settings.groups.map(() => m);
+        for (const r of s.rounds) resizeRound(r, s.settings.runnerCounts);
+      });
+      renderActive();
     });
     const num = (sel: string, apply: (s: AppState, v: number) => void) =>
       main.querySelector<HTMLInputElement>(sel)?.addEventListener("change", (e) => {
@@ -533,7 +553,7 @@ export function mountControl(root: HTMLElement): void {
       if (!confirm("このラウンドの入力をすべて消しますか?")) return;
       update((s) => {
         const r = s.rounds[s.currentRound];
-        if (r) r.ladders = makeEmptyRound(s.settings.groups.length, s.settings.runnerCount).ladders;
+        if (r) r.ladders = makeEmptyRound(s.settings.runnerCounts).ladders;
       });
       renderActive();
     });
@@ -643,7 +663,7 @@ export function mountControl(root: HTMLElement): void {
   });
   root.querySelector("[data-round-add]")?.addEventListener("click", () => {
     update((s) => {
-      s.rounds.push(makeEmptyRound(s.settings.groups.length, s.settings.runnerCount));
+      s.rounds.push(makeEmptyRound(s.settings.runnerCounts));
       s.currentRound = s.rounds.length - 1;
       s.projection = { screen: "blank", laddersRevealed: false, answerRevealed: false, zoomed: false };
     });

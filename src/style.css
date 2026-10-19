@@ -243,6 +243,42 @@ select:focus {
   gap: var(--space-1) 0;
   margin-top: var(--space-1);
 }
+.group-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.group-row .g-tag {
+  min-width: 2.2em;
+  color: var(--muted);
+}
+.group-row input[type="text"] {
+  flex: 0 1 16rem;
+}
+.group-row .rc {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--muted);
+}
+.group-row .rc input {
+  width: 4.5rem;
+}
+.input-grid td.cell-empty {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--paper-2),
+    var(--paper-2) 4px,
+    var(--paper) 4px,
+    var(--paper) 8px
+  );
+}
 
 .btn-row {
   display: flex;

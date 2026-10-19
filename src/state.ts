@@ -41,11 +41,18 @@ window.addEventListener("storage", (event) => {
 });
 
 function migrate(raw: unknown): AppState {
-  // 今はバージョン1のみ。将来フィールドが増えたらここで補完する。
-  const parsed = raw as Partial<AppState>;
+  const parsed = raw as (Partial<AppState> & { settings?: Record<string, unknown> }) | null;
   if (!parsed || parsed.version !== STATE_VERSION || !parsed.settings) {
     return createDefaultState();
   }
+  // 旧形式(走者数が全グループ共通の runnerCount)をグループごとの runnerCounts へ移行。
+  const s = parsed.settings;
+  if (!Array.isArray(s.runnerCounts)) {
+    const n = Array.isArray(s.groups) ? s.groups.length : 4;
+    const rc = typeof s.runnerCount === "number" && s.runnerCount > 0 ? s.runnerCount : 8;
+    s.runnerCounts = Array.from({ length: n }, () => rc);
+  }
+  delete s.runnerCount;
   return parsed as AppState;
 }
 
