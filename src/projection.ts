@@ -54,6 +54,30 @@ function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
 }
 
+/** 正解付近のズーム窓。正解を挟んだ段とピタリ段の値域に合わせて絞る。 */
+function focusWindow(results: GroupResult[], answer: number): { min: number; max: number } {
+  const vals: number[] = [answer];
+  for (const r of results) {
+    const s = r.score;
+    if (!s) continue;
+    if (s.placement.kind === "band") {
+      vals.push(s.placement.lower, s.placement.upper);
+    } else if (s.placement.kind === "exact") {
+      const v = r.values[s.placement.index];
+      if (v != null) vals.push(v);
+    }
+    if (s.pitariValue != null) vals.push(s.pitariValue);
+  }
+  let min = Math.min(...vals);
+  let max = Math.max(...vals);
+  // どこも挟んでいない等で潰れたら、正解を中心に適度な窓を作る。
+  if (!(max > min)) {
+    min = answer / 1.5;
+    max = answer * 1.5;
+  }
+  return { min, max };
+}
+
 function renderBlank(): string {
   return `
     <div class="proj-slide proj-blank">
@@ -101,6 +125,12 @@ function renderReveal(state: AppState): string {
   const chartHeight = 860;
   const chartWidth = Math.max(Math.round((chartHeight * 16) / 9), groupCount * 190);
 
+  // ズーム時は、正解を挟んだ各段(サンドイッチ帯)に合わせて y 軸を絞る。
+  const focus =
+    state.projection.zoomed && showAns && answerVal != null
+      ? focusWindow(results, answerVal)
+      : null;
+
   const chart = buildLadderChart({
     groups: results.map(toChartGroup),
     answer: showAns ? answerVal : null,
@@ -108,6 +138,7 @@ function renderReveal(state: AppState): string {
     showAnswer: showAns,
     width: chartWidth,
     height: chartHeight,
+    focus,
   });
 
   let footer = "";

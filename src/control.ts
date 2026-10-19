@@ -247,7 +247,11 @@ function renderReveal(state: AppState): string {
         <button data-reveal-answer>② 正解を表示</button>
         <button data-reveal-hide class="ghost">隠す(やり直し)</button>
       </div>
-      <p class="status">投影:${p.screen === "reveal" ? "結果画面" : p.screen} / はしご ${p.laddersRevealed ? "表示" : "非表示"} / 正解 ${p.answerRevealed ? "表示" : "非表示"}</p>
+      <div class="btn-row">
+        <button data-reveal-zoom>③ 正解付近を拡大</button>
+        <button data-reveal-unzoom class="ghost">全体に戻す</button>
+      </div>
+      <p class="status">投影:${p.screen === "reveal" ? "結果画面" : p.screen} / はしご ${p.laddersRevealed ? "表示" : "非表示"} / 正解 ${p.answerRevealed ? "表示" : "非表示"} / 表示 ${p.zoomed ? "拡大" : "全体"}</p>
     </section>
 
     <section class="panel">
@@ -434,7 +438,15 @@ export function mountControl(root: HTMLElement): void {
       renderActive();
     });
     main.querySelector("[data-show-question]")?.addEventListener("click", () => {
-      update((s) => (s.projection = { screen: "question", laddersRevealed: false, answerRevealed: false }));
+      update(
+        (s) =>
+          (s.projection = {
+            screen: "question",
+            laddersRevealed: false,
+            answerRevealed: false,
+            zoomed: false,
+          }),
+      );
       refreshChrome();
     });
     main.querySelector("[data-blank]")?.addEventListener("click", () => {
@@ -535,7 +547,10 @@ export function mountControl(root: HTMLElement): void {
 
   function bindReveal(): void {
     main.querySelector("[data-reveal-open]")?.addEventListener("click", () => {
-      update((s) => (s.projection.screen = "reveal"));
+      update((s) => {
+        s.projection.screen = "reveal";
+        s.projection.zoomed = false;
+      });
       renderActive();
     });
     main.querySelector("[data-reveal-ladders]")?.addEventListener("click", () => {
@@ -561,7 +576,23 @@ export function mountControl(root: HTMLElement): void {
       update((s) => {
         s.projection.laddersRevealed = false;
         s.projection.answerRevealed = false;
+        s.projection.zoomed = false;
       });
+      renderActive();
+    });
+    main.querySelector("[data-reveal-zoom]")?.addEventListener("click", () => {
+      if (!getState().projection.answerRevealed) {
+        alert("先に「② 正解を表示」してから拡大してください。");
+        return;
+      }
+      update((s) => {
+        s.projection.screen = "reveal";
+        s.projection.zoomed = true;
+      });
+      renderActive();
+    });
+    main.querySelector("[data-reveal-unzoom]")?.addEventListener("click", () => {
+      update((s) => (s.projection.zoomed = false));
       renderActive();
     });
     main.querySelector("[data-answer-apply]")?.addEventListener("click", () => {
@@ -614,7 +645,7 @@ export function mountControl(root: HTMLElement): void {
     update((s) => {
       s.rounds.push(makeEmptyRound(s.settings.groups.length, s.settings.runnerCount));
       s.currentRound = s.rounds.length - 1;
-      s.projection = { screen: "blank", laddersRevealed: false, answerRevealed: false };
+      s.projection = { screen: "blank", laddersRevealed: false, answerRevealed: false, zoomed: false };
     });
     renderActive();
   });

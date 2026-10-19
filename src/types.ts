@@ -41,6 +41,8 @@ export interface ProjectionState {
   laddersRevealed: boolean;
   /** 正解の横線を表示済みか。 */
   answerRevealed: boolean;
+  /** 正解付近へズームインしているか。 */
+  zoomed: boolean;
 }
 
 export interface TimerState {
@@ -107,7 +109,7 @@ export function createDefaultState(): AppState {
     questions: [],
     rounds: [makeEmptyRound(groups.length, runnerCount)],
     currentRound: 0,
-    projection: { screen: "blank", laddersRevealed: false, answerRevealed: false },
+    projection: { screen: "blank", laddersRevealed: false, answerRevealed: false, zoomed: false },
     timer: { durationSec: 180, endsAt: null, pausedRemainingMs: null },
   };
 }

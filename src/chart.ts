@@ -25,6 +25,8 @@ export interface ChartOptions {
   showAnswer: boolean;
   width: number;
   height: number;
+  /** 指定すると y 軸をこの値域に絞る(正解付近のズーム用)。範囲外の段は描かない。 */
+  focus?: { min: number; max: number } | null;
 }
 
 const MARGIN = { top: 24, right: 24, bottom: 80, left: 92 };
@@ -55,21 +57,27 @@ export function buildLadderChart(o: ChartOptions): string {
   const plotW = width - MARGIN.left - MARGIN.right;
   const plotH = height - MARGIN.top - MARGIN.bottom;
 
-  // y スケール(対数)。全グループの値と正解から範囲を決める。
+  // y スケール(対数)。focus があればその値域に、無ければ全データから範囲を決める。
   const allValues = groups.flatMap((g) => g.values);
   if (answer != null) allValues.push(answer);
   const positive = allValues.filter((v) => v > 0);
-  const dataMin = positive.length ? Math.min(...positive) : 1;
-  const dataMax = positive.length ? Math.max(...positive) : 10;
+  const dataMin = o.focus?.min ?? (positive.length ? Math.min(...positive) : 1);
+  const dataMax = o.focus?.max ?? (positive.length ? Math.max(...positive) : 10);
 
   const logMin = Math.log10(dataMin);
   const logMax = Math.log10(dataMax);
-  const pad = (logMax - logMin) * 0.05 || 0.3;
+  const pad = (logMax - logMin) * 0.08 || 0.3;
   const rangeMin = logMin - pad;
   const rangeMax = logMax + pad;
 
   const y = (v: number): number =>
     plotTop + ((rangeMax - Math.log10(v)) / (rangeMax - rangeMin)) * plotH;
+
+  // 表示される値域(パディング込み)。範囲外の段は描画しない。
+  const vMinView = 10 ** rangeMin;
+  const vMaxView = 10 ** rangeMax;
+  const inView = (v: number): boolean => v >= vMinView && v <= vMaxView;
+  const clampY = (yy: number): number => Math.min(plotTop + plotH, Math.max(plotTop, yy));
 
   const n = Math.max(groups.length, 1);
   const colW = plotW / n;
@@ -78,7 +86,7 @@ export function buildLadderChart(o: ChartOptions): string {
   const parts: string[] = [];
 
   // 背景の対数グリッド
-  for (const tick of niceLogTicks(dataMin, dataMax)) {
+  for (const tick of niceLogTicks(vMinView, vMaxView)) {
     const ty = y(tick);
     parts.push(
       `<line class="grid" x1="${plotLeft}" y1="${ty}" x2="${plotLeft + plotW}" y2="${ty}" />`,
@@ -93,24 +101,26 @@ export function buildLadderChart(o: ChartOptions): string {
     const groupClass = `ladder-group${dim ? " is-dim" : ""}`;
     parts.push(`<g class="${groupClass}">`);
 
-    // 段のハイライト(正解を挟んだ区間)
-    if (showAnswer && g.band) {
-      const yTop = y(g.band.upper);
-      const yBottom = y(g.band.lower);
+    // 段のハイライト(正解を挟んだ区間)。表示域に合わせてクランプする。
+    if (showAnswer && g.band && g.band.upper >= vMinView && g.band.lower <= vMaxView) {
+      const yTop = clampY(y(g.band.upper));
+      const yBottom = clampY(y(g.band.lower));
       parts.push(
-        `<rect class="band" x="${cx - colW * 0.38}" y="${yTop}" width="${colW * 0.76}" height="${yBottom - yTop}" />`,
+        `<rect class="band" x="${cx - colW * 0.38}" y="${yTop}" width="${colW * 0.76}" height="${Math.max(0, yBottom - yTop)}" />`,
       );
     }
 
-    if (showLadders && g.values.length > 0) {
-      const top = y(Math.max(...g.values));
-      const bottom = y(Math.min(...g.values));
+    const visible = g.values.filter(inView);
+    if (showLadders && visible.length > 0) {
+      const top = y(Math.max(...visible));
+      const bottom = y(Math.min(...visible));
       // はしごの縦レール
       parts.push(`<line class="rail" x1="${cx}" y1="${top}" x2="${cx}" y2="${bottom}" />`);
       // 各段。ラベルが重なる場合(値が近い段)は数字を間引いて読めるようにする。
       const LABEL_GAP = 20;
       let lastLabelY = Number.POSITIVE_INFINITY;
       for (const v of g.values) {
+        if (!inView(v)) continue;
         const vy = y(v);
         const isExact = showAnswer && g.exactValue === v;
         const rungClass = `rung${isExact ? " is-exact" : ""}`;
