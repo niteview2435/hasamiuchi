@@ -76,17 +76,20 @@ export function buildLadderChart(o: ChartOptions): string {
   const y = (v: number): number =>
     plotTop + ((rangeMax - Math.log10(v)) / (rangeMax - rangeMin)) * plotH;
 
-  // 表示される値域(パディング込み)。範囲外の段は描画しない。
+  // グリッド線を引く範囲(表示値域)。段やレールは消さずにクリップで枠内に収める。
   const vMinView = 10 ** rangeMin;
   const vMaxView = 10 ** rangeMax;
-  const inView = (v: number): boolean => v >= vMinView && v <= vMaxView;
-  const clampY = (yy: number): number => Math.min(plotTop + plotH, Math.max(plotTop, yy));
 
   const n = Math.max(groups.length, 1);
   const colW = plotW / n;
   const colCenter = (i: number): number => plotLeft + colW * (i + 0.5);
 
   const parts: string[] = [];
+
+  // 枠外にはみ出す線を「消さずに」切り取るためのクリップ領域(プロット矩形)。
+  parts.push(
+    `<defs><clipPath id="plot-clip"><rect x="${plotLeft}" y="${plotTop}" width="${plotW}" height="${plotH}" /></clipPath></defs>`,
+  );
 
   // 背景の対数グリッド
   for (const tick of niceLogTicks(vMinView, vMaxView)) {
@@ -104,26 +107,27 @@ export function buildLadderChart(o: ChartOptions): string {
     const groupClass = `ladder-group${dim ? " is-dim" : ""}`;
     parts.push(`<g class="${groupClass}">`);
 
-    // 段のハイライト(正解を挟んだ区間)。表示域に合わせてクランプする。
-    if (showAnswer && g.band && g.band.upper >= vMinView && g.band.lower <= vMaxView) {
-      const yTop = clampY(y(g.band.upper));
-      const yBottom = clampY(y(g.band.lower));
+    // 帯・レール・段は本来の位置に描き、枠外はクリップで切る(消さない・端で途切れない)。
+    parts.push(`<g clip-path="url(#plot-clip)">`);
+
+    // 段のハイライト(正解を挟んだ区間)
+    if (showAnswer && g.band) {
+      const yTop = y(g.band.upper);
+      const yBottom = y(g.band.lower);
       parts.push(
         `<rect class="band" x="${cx - colW * 0.38}" y="${yTop}" width="${colW * 0.76}" height="${Math.max(0, yBottom - yTop)}" />`,
       );
     }
 
-    const visible = g.values.filter(inView);
-    if (showLadders && visible.length > 0) {
-      const top = y(Math.max(...visible));
-      const bottom = y(Math.min(...visible));
-      // はしごの縦レール
+    if (showLadders && g.values.length > 0) {
+      // レールは本来の上端・下端まで引く(枠外はクリップ)。
+      const top = y(Math.max(...g.values));
+      const bottom = y(Math.min(...g.values));
       parts.push(`<line class="rail" x1="${cx}" y1="${top}" x2="${cx}" y2="${bottom}" />`);
       // 各段。ラベルが重なる場合(値が近い段)は数字を間引いて読めるようにする。
       const LABEL_GAP = 20;
       let lastLabelY = Number.POSITIVE_INFINITY;
       for (const v of g.values) {
-        if (!inView(v)) continue;
         const vy = y(v);
         const isExact = showAnswer && g.exactValue === v;
         const rungClass = `rung${isExact ? " is-exact" : ""}`;
@@ -139,6 +143,8 @@ export function buildLadderChart(o: ChartOptions): string {
         }
       }
     }
+
+    parts.push(`</g>`); // クリップ領域ここまで
 
     // 得点のラベル(正解表示後)。比は出さず得点だけ。
     if (showAnswer && g.score != null) {
