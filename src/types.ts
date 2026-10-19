@@ -22,6 +22,8 @@ export interface Settings {
   pitariBonus: number;
   /** お題表示にタイマーを出すか。 */
   timerEnabled: boolean;
+  /** 走者数ハンデ(人数差で段の得点を正規化)。全チーム同数なら無影響。 */
+  handicap: boolean;
 }
 
 export interface Round {
@@ -103,7 +105,7 @@ export function createDefaultState(): AppState {
   const runnerCounts = groups.map(() => 8);
   return {
     version: STATE_VERSION,
-    settings: { groups, runnerCounts, c: 20, pitariBonus: 20, timerEnabled: true },
+    settings: { groups, runnerCounts, c: 20, pitariBonus: 20, timerEnabled: true, handicap: true },
     questions: [],
     rounds: [makeEmptyRound(runnerCounts)],
     currentRound: 0,

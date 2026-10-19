@@ -12,12 +12,19 @@ export interface ScoringConfig {
    * unit = 1 なら「正解との完全一致」と同じ挙動。
    */
   unit: number;
+  /**
+   * 段の得点ペナルティに掛ける係数(走者数ハンデ用)。デフォルト 1。
+   * 例:(そのチームの走者数-1)/(最大走者数-1) を渡すと、走者が少ないチームの
+   * ペナルティが緩み、人数差の有利不利を打ち消す。全チーム同数なら 1 で無補正。
+   */
+  penaltyScale?: number;
 }
 
 export const DEFAULT_SCORING: ScoringConfig = {
   c: 20,
   pitariBonus: 20,
   unit: 1,
+  penaltyScale: 1,
 };
 
 /** 正解がはしごのどこに入ったか。 */
@@ -114,8 +121,9 @@ export function computeTeamScore(
   const upper = ladder[k + 1]!;
   const ratio = upper / lower;
 
-  // 4. S = max(0, 30 - c * log2(r))
-  const score = round1(Math.max(0, 30 - config.c * Math.log2(ratio)));
+  // 4. S = max(0, 30 - c * penaltyScale * log2(r))
+  const scale = config.penaltyScale ?? 1;
+  const score = round1(Math.max(0, 30 - config.c * scale * Math.log2(ratio)));
 
   return {
     placement: { kind: "band", lower, upper },

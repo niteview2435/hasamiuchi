@@ -103,6 +103,7 @@ function renderSettings(state: AppState): string {
       <label class="field"><span>ピタリ賞</span>
         <input type="number" min="0" step="1" data-pitari value="${s.pitariBonus}" /></label>
       <label class="field field-check"><input type="checkbox" data-timer-enabled ${s.timerEnabled ? "checked" : ""} /><span>お題画面にタイマーを表示</span></label>
+      <label class="field field-check"><input type="checkbox" data-handicap ${s.handicap ? "checked" : ""} /><span>走者数ハンデ(人数差を補正。同数なら無影響)</span></label>
     </section>
 
     <section class="panel">
@@ -434,6 +435,9 @@ export function mountControl(root: HTMLElement): void {
     num("[data-pitari]", (s, v) => (s.settings.pitariBonus = v));
     main.querySelector<HTMLInputElement>("[data-timer-enabled]")?.addEventListener("change", (e) => {
       update((s) => (s.settings.timerEnabled = (e.target as HTMLInputElement).checked));
+    });
+    main.querySelector<HTMLInputElement>("[data-handicap]")?.addEventListener("change", (e) => {
+      update((s) => (s.settings.handicap = (e.target as HTMLInputElement).checked));
     });
     main.querySelector<HTMLInputElement>("[data-question-file]")?.addEventListener("change", async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];

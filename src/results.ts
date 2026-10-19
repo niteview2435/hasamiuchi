@@ -18,17 +18,26 @@ export interface GroupResult {
 
 export function computeRoundResults(state: AppState, round: Round): GroupResult[] {
   const answer = roundAnswer(state, round);
-  const config = {
-    c: state.settings.c,
-    pitariBonus: state.settings.pitariBonus,
-    unit: roundQuestion(state, round)?.unit ?? 1,
-  };
+  const unit = roundQuestion(state, round)?.unit ?? 1;
+  // 走者数ハンデ:段の得点ペナルティを (そのチームの走者数-1)/(最大走者数-1) 倍する。
+  // 全チーム同数なら係数は 1 で無影響。
+  const counts = state.settings.runnerCounts;
+  const maxM = Math.max(1, ...counts);
 
   return state.settings.groups.map((name, gi) => {
     const values = (round.ladders[gi] ?? []).filter((v): v is number => v != null);
     if (answer == null || values.length === 0) {
       return { name, values, score: null, bonus: 0, total: 0 };
     }
+    const m = counts[gi] ?? maxM;
+    const penaltyScale =
+      state.settings.handicap && maxM > 1 ? (m - 1) / (maxM - 1) : 1;
+    const config = {
+      c: state.settings.c,
+      pitariBonus: state.settings.pitariBonus,
+      unit,
+      penaltyScale,
+    };
     const score = computeTeamScore(values, answer, config);
     const bonus = score.pitari ? config.pitariBonus : 0;
     return { name, values, score, bonus, total: score.score + bonus };

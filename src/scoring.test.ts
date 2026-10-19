@@ -85,6 +85,15 @@ describe("computeTeamScore", () => {
     expect(r.declaredBand).toBe(2);
   });
 
+  it("走者数ハンデ: penaltyScale で段のペナルティが緩む", () => {
+    const ladder = [1000, 2000]; // a を挟む2段。r = 2、log2(2)=1
+    const a = 1414;
+    const base = computeTeamScore(ladder, a, { c: 20, pitariBonus: 20, unit: 1, penaltyScale: 1 });
+    const handi = computeTeamScore(ladder, a, { c: 20, pitariBonus: 20, unit: 1, penaltyScale: 0.5 });
+    expect(base.score).toBe(10); // 30 - 20*1*1
+    expect(handi.score).toBe(20); // 30 - 20*0.5*1
+  });
+
   it("c を上げると安全策(毎回1.5倍)の得点が下がる", () => {
     const ladder = [1000, 1500];
     const a = 1200;

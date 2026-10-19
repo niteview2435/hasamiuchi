@@ -53,6 +53,7 @@ function migrate(raw: unknown): AppState {
     s.runnerCounts = Array.from({ length: n }, () => rc);
   }
   delete s.runnerCount;
+  if (typeof s.handicap !== "boolean") s.handicap = true;
   return parsed as AppState;
 }
 
