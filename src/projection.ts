@@ -93,37 +93,34 @@ function renderReveal(state: AppState): string {
   if (!round) return renderBlank();
   const results = computeRoundResults(state, round);
   const q = roundQuestion(state, round);
+  const answerVal = round.answerOverride ?? (q ? q.answer : null);
+  const showAns = state.projection.answerRevealed;
+
+  // 16:9 に近い比率にしてはしごが画面幅いっぱいに広がるようにする。
+  const groupCount = state.settings.groups.length;
+  const chartHeight = 720;
+  const chartWidth = Math.max(Math.round((chartHeight * 16) / 9), groupCount * 190);
+
   const chart = buildLadderChart({
     groups: results.map(toChartGroup),
-    answer: state.projection.answerRevealed
-      ? (round.answerOverride ?? (q ? q.answer : null))
-      : null,
+    answer: showAns ? answerVal : null,
     showLadders: state.projection.laddersRevealed,
-    showAnswer: state.projection.answerRevealed,
-    width: Math.max(960, state.settings.groups.length * 150),
-    height: 640,
+    showAnswer: showAns,
+    width: chartWidth,
+    height: chartHeight,
   });
 
   let footer = "";
-  if (state.projection.answerRevealed) {
+  if (showAns) {
     const pitari = results.filter((r) => r.score?.pitari);
-    const bracketed = results.filter((r) => r.score?.placement.kind === "band");
-    const top = bracketed.sort((a, b) => (b.score?.score ?? 0) - (a.score?.score ?? 0))[0];
-    const badges: string[] = [];
-    if (pitari.length) {
-      badges.push(
-        `<span class="badge badge-pitari">ピタリ賞 +${state.settings.pitariBonus}点 … ${pitari
+    const pitariBadge = pitari.length
+      ? `<span class="badge badge-pitari">ピタリ賞 +${state.settings.pitariBonus}点 … ${pitari
           .map((r) => esc(r.name))
-          .join("・")}</span>`,
-      );
-    }
-    if (top?.score && top.score.mvpPair) {
-      const [a, b] = top.score.mvpPair;
-      badges.push(
-        `<span class="badge badge-mvp">MVP … ${esc(top.name)} 第${a + 1}走者・第${b + 1}走者</span>`,
-      );
-    }
-    if (badges.length) footer = `<div class="proj-badges">${badges.join("")}</div>`;
+          .join("・")}</span>`
+      : "";
+    const callout =
+      answerVal != null ? `<div class="answer-callout">正解 ${formatNumber(answerVal)}</div>` : "";
+    footer = `<div class="proj-footer-row"><div class="proj-badges">${pitariBadge}</div>${callout}</div>`;
   }
 
   return `

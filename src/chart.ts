@@ -1,7 +1,7 @@
 // はしごの対数目盛グラフを SVG 文字列で組み立てる。
 // ライブラリは使わず手描きすることで、見た目を仕様どおりに保つ。
 
-import { formatNumber, formatRatio, formatScore } from "./format";
+import { formatNumber, formatScore } from "./format";
 
 export interface ChartGroup {
   name: string;
@@ -127,15 +127,11 @@ export function buildLadderChart(o: ChartOptions): string {
       }
     }
 
-    // 得点・比のラベル(正解表示後)
+    // 得点のラベル(正解表示後)。比は出さず得点だけ。
     if (showAnswer && g.score != null) {
-      const label =
-        g.ratio != null && !g.outside
-          ? `${formatRatio(g.ratio)} → ${formatScore(g.score)}点`
-          : `${formatScore(g.score)}点`;
       const cls = g.outside ? "score-label is-zero" : "score-label";
       parts.push(
-        `<text class="${cls}" x="${cx}" y="${plotTop + plotH + 44}" text-anchor="middle">${esc(label)}</text>`,
+        `<text class="${cls}" x="${cx}" y="${plotTop + plotH + 48}" text-anchor="middle">${formatScore(g.score)}点</text>`,
       );
     }
 
@@ -148,11 +144,11 @@ export function buildLadderChart(o: ChartOptions): string {
 
   // 正解の横線(ドロップ・アニメーションは CSS 側で付ける)
   if (showAnswer && answer != null) {
+    // 横線だけ引く。正解の数値はスライド下部に赤文字で別途出す(重なり回避)。
     const ay = y(answer);
     parts.push(
       `<g class="answer-line">`,
       `<line x1="${plotLeft}" y1="${ay}" x2="${plotLeft + plotW}" y2="${ay}" />`,
-      `<text x="${plotLeft + 8}" y="${ay - 12}" text-anchor="start">正解 ${formatNumber(answer)}</text>`,
       `</g>`,
     );
   }

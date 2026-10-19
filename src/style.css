@@ -448,11 +448,19 @@ body.view-projection #app {
   height: 100%;
 }
 
+.proj-footer-row {
+  display: flex;
+  align-items: center;
+  gap: 2vmin;
+  margin-top: 1.5vmin;
+}
+.proj-footer-row .proj-badges {
+  flex: 0 0 auto;
+}
 .proj-badges {
   display: flex;
   gap: 2vmin;
   flex-wrap: wrap;
-  margin-top: 1vmin;
 }
 .badge {
   font-size: 2.6vmin;
@@ -465,10 +473,14 @@ body.view-projection #app {
   color: #fff;
   border-color: var(--accent);
 }
-.badge-mvp {
-  background: var(--gold);
-  color: #fff;
-  border-color: var(--gold);
+/* 正解の値。MVP が出ていた位置を中央寄りに移し、赤文字で大きく出す。 */
+.answer-callout {
+  margin: 0 auto;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 5.5vmin;
+  letter-spacing: 0.04em;
 }
 
 .proj-ranking {
