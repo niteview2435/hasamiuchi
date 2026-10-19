@@ -146,8 +146,12 @@ function renderRanking(state: AppState): string {
       </tr>`,
     )
     .join("");
+
+  // グループ数が多いほど文字と行間を縮めて画面内に収める(ヘッダ行を含めて +1)。
+  const fontVmin = Math.max(1.8, Math.min(4, 42 / (rows.length + 1)));
+
   return `
-    <div class="proj-slide proj-ranking">
+    <div class="proj-slide proj-ranking" style="--rank-fs:${fontVmin.toFixed(2)}vmin">
       <p class="round-no">累計ランキング</p>
       <table class="ranking-table">
         <thead><tr><th>順位</th><th>グループ</th><th>合計</th></tr></thead>
