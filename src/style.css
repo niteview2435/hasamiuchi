@@ -580,7 +580,7 @@ body.view-projection #app {
   font-weight: 700;
   font-family: var(--font-display);
 }
-.ladder-chart .answer-line {
+.ladder-chart .answer-line.drop {
   animation: answer-drop 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 @keyframes answer-drop {
@@ -594,7 +594,7 @@ body.view-projection #app {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ladder-chart .answer-line {
+  .ladder-chart .answer-line.drop {
     animation: none;
   }
 }

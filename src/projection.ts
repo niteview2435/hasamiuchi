@@ -115,6 +115,41 @@ function renderQuestion(state: AppState): string {
     </div>`;
 }
 
+/** 全体表示のときの対数レンジ(buildLadderChart の既定と一致させる)。 */
+function fullLogRange(results: GroupResult[], answer: number | null): { min: number; max: number } {
+  const vals = results.flatMap((r) => r.values).filter((v) => v > 0);
+  if (answer != null && answer > 0) vals.push(answer);
+  const dMin = vals.length ? Math.min(...vals) : 1;
+  const dMax = vals.length ? Math.max(...vals) : 10;
+  const lMin = Math.log10(dMin);
+  const lMax = Math.log10(dMax);
+  const pad = (lMax - lMin) * 0.08 || 0.3;
+  return { min: lMin - pad, max: lMax + pad };
+}
+
+/** 拡大の目標倍率。一番きつい挟み(focusWindow)が画面を満たす程度。 */
+function targetZoom(results: GroupResult[], answer: number): number {
+  const full = fullLogRange(results, answer);
+  const tight = focusWindow(results, answer);
+  const targetSpan = Math.log10(tight.max) - Math.log10(tight.min);
+  const fullSpan = full.max - full.min;
+  if (targetSpan <= 0 || fullSpan <= 0) return 1;
+  return Math.min(12, Math.max(1, fullSpan / targetSpan));
+}
+
+/**
+ * 倍率 z のときの表示値域。正解 answer の対数位置を軸に、全体レンジの上下を
+ * それぞれ 1/z に縮める。これにより正解線は画面上の同じ位置に固定されたまま拡大する。
+ */
+function zoomFocusAt(results: GroupResult[], answer: number, z: number): { min: number; max: number } {
+  const full = fullLogRange(results, answer);
+  const p = Math.log10(answer);
+  return {
+    min: 10 ** (p - (p - full.min) / z),
+    max: 10 ** (p + (full.max - p) / z),
+  };
+}
+
 function renderReveal(state: AppState): string {
   const round = state.rounds[state.currentRound];
   if (!round) return renderBlank();
@@ -122,27 +157,6 @@ function renderReveal(state: AppState): string {
   const q = roundQuestion(state, round);
   const answerVal = round.answerOverride ?? (q ? q.answer : null);
   const showAns = state.projection.answerRevealed;
-
-  // viewBox を縦に大きく取り、固定px のラベルに対してはしごを大きく見せる。
-  const groupCount = state.settings.groups.length;
-  const chartHeight = 860;
-  const chartWidth = Math.max(Math.round((chartHeight * 16) / 9), groupCount * 190);
-
-  // ズーム時は、正解を挟んだ各段(サンドイッチ帯)に合わせて y 軸を絞る。
-  const focus =
-    state.projection.zoomed && showAns && answerVal != null
-      ? focusWindow(results, answerVal)
-      : null;
-
-  const chart = buildLadderChart({
-    groups: results.map(toChartGroup),
-    answer: showAns ? answerVal : null,
-    showLadders: state.projection.laddersRevealed,
-    showAnswer: showAns,
-    width: chartWidth,
-    height: chartHeight,
-    focus,
-  });
 
   let footer = "";
   if (showAns) {
@@ -157,12 +171,44 @@ function renderReveal(state: AppState): string {
     footer = `<div class="proj-footer-row"><div class="proj-badges">${pitariBadge}</div>${callout}</div>`;
   }
 
+  // チャートは paintChart が [data-chart] に描く(ズームをアニメーションさせるため)。
   return `
     <div class="proj-slide proj-reveal">
       <p class="round-no">第 ${state.currentRound + 1} ラウンド${q ? ` ― ${esc(q.title)}` : ""}</p>
-      <div class="chart-wrap">${chart}</div>
+      <div class="chart-wrap" data-chart></div>
       ${footer}
     </div>`;
+}
+
+const CHART_HEIGHT = 860;
+
+/** 現在の倍率 z でチャートを [data-chart] に描く。 */
+function paintChart(root: HTMLElement, state: AppState, z: number, answerDrop: boolean): void {
+  const wrap = root.querySelector<HTMLElement>("[data-chart]");
+  const round = state.rounds[state.currentRound];
+  if (!wrap || !round) return;
+  const results = computeRoundResults(state, round);
+  const q = roundQuestion(state, round);
+  const answerVal = round.answerOverride ?? (q ? q.answer : null);
+  const showAns = state.projection.answerRevealed;
+
+  const width = Math.max(
+    Math.round((CHART_HEIGHT * 16) / 9),
+    state.settings.groups.length * 190,
+  );
+  const focus =
+    showAns && answerVal != null && z > 1.0001 ? zoomFocusAt(results, answerVal, z) : null;
+
+  wrap.innerHTML = buildLadderChart({
+    groups: results.map(toChartGroup),
+    answer: showAns ? answerVal : null,
+    showLadders: state.projection.laddersRevealed,
+    showAnswer: showAns,
+    width,
+    height: CHART_HEIGHT,
+    focus,
+    answerDrop,
+  });
 }
 
 function renderRanking(state: AppState): string {
@@ -196,6 +242,42 @@ function renderRanking(state: AppState): string {
 
 export function mountProjection(root: HTMLElement): void {
   let timerInterval: number | null = null;
+  let zoomRaf = 0;
+  let zoomCurrent = 1; // 現在の表示倍率(アニメーションで補間)
+
+  const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
+
+  // 現在の状態に向けてズーム倍率をアニメーションさせる。
+  const driveZoom = (state: AppState): void => {
+    cancelAnimationFrame(zoomRaf);
+    const round = state.rounds[state.currentRound];
+    const q = round ? roundQuestion(state, round) : null;
+    const answerVal = round ? (round.answerOverride ?? (q ? q.answer : null)) : null;
+
+    let target = 1;
+    if (round && state.projection.zoomed && state.projection.answerRevealed && answerVal != null) {
+      target = targetZoom(computeRoundResults(state, round), answerVal);
+    }
+
+    // 既に目標倍率付近なら静止描画。初回公開(倍率1)では正解線のドロップ演出を出す。
+    if (Math.abs(target - zoomCurrent) < 0.01) {
+      zoomCurrent = target;
+      paintChart(root, state, zoomCurrent, target <= 1.0001 && state.projection.answerRevealed);
+      return;
+    }
+
+    const start = zoomCurrent;
+    const t0 = performance.now();
+    const duration = 600;
+    paintChart(root, state, zoomCurrent, false); // 空フレームを避けて即描画
+    const step = (now: number): void => {
+      const t = Math.min(1, (now - t0) / duration);
+      zoomCurrent = start + (target - start) * easeOutCubic(t);
+      paintChart(root, state, zoomCurrent, false);
+      if (t < 1) zoomRaf = requestAnimationFrame(step);
+    };
+    zoomRaf = requestAnimationFrame(step);
+  };
 
   const render = (state: AppState): void => {
     let html: string;
@@ -213,6 +295,14 @@ export function mountProjection(root: HTMLElement): void {
         html = renderBlank();
     }
     root.innerHTML = html;
+
+    if (state.projection.screen === "reveal") {
+      driveZoom(state);
+    } else {
+      // reveal を離れたらズームを解除しておく。
+      cancelAnimationFrame(zoomRaf);
+      zoomCurrent = 1;
+    }
 
     // タイマーは投影側で毎秒進める(状態は開始時刻だけ共有する)。
     if (timerInterval != null) {

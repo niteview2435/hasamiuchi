@@ -27,6 +27,8 @@ export interface ChartOptions {
   height: number;
   /** 指定すると y 軸をこの値域に絞る(正解付近のズーム用)。範囲外の段は描かない。 */
   focus?: { min: number; max: number } | null;
+  /** 正解線の落下アニメーションを付けるか(初回公開のみ true。ズーム中は false)。 */
+  answerDrop?: boolean;
 }
 
 const MARGIN = { top: 24, right: 24, bottom: 80, left: 92 };
@@ -66,7 +68,8 @@ export function buildLadderChart(o: ChartOptions): string {
 
   const logMin = Math.log10(dataMin);
   const logMax = Math.log10(dataMax);
-  const pad = (logMax - logMin) * 0.08 || 0.3;
+  // focus を渡されたときはその値域をそのまま使う(ズームの倍率を精密に制御するため)。
+  const pad = o.focus ? 0 : (logMax - logMin) * 0.08 || 0.3;
   const rangeMin = logMin - pad;
   const rangeMax = logMax + pad;
 
@@ -156,8 +159,9 @@ export function buildLadderChart(o: ChartOptions): string {
   if (showAnswer && answer != null) {
     // 横線だけ引く。正解の数値はスライド下部に赤文字で別途出す(重なり回避)。
     const ay = y(answer);
+    const dropClass = o.answerDrop ? " drop" : "";
     parts.push(
-      `<g class="answer-line">`,
+      `<g class="answer-line${dropClass}">`,
       `<line x1="${plotLeft}" y1="${ay}" x2="${plotLeft + plotW}" y2="${ay}" />`,
       `</g>`,
     );
