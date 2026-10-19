@@ -1,0 +1,19 @@
+# dependencies / build
+node_modules/
+dist/
+
+# nix / direnv
+.direnv/
+result
+result-*
+
+# 本番のお題・正解データは公開リポジトリに入れない(仕様 2.2)
+# サンプルは samples/ に置き、本番ファイルは *.local.json とする
+*.local.json
+/questions/
+
+# editor / os
+.DS_Store
+*.log
+.vscode/
+.idea/

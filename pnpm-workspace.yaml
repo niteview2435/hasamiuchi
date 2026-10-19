@@ -1,0 +1,4 @@
+# esbuild(vite/vitest の依存)はインストール時にビルドスクリプトを走らせる。
+# pnpm 10+ は既定でブロックするため、明示的に許可する。
+allowBuilds:
+  esbuild: true

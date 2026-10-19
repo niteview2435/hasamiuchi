@@ -1,0 +1,94 @@
+/*
+ * デザイントークン。色・余白・タイポはここで一元管理する。
+ * 方向性:紙・エディトリアル(明るい地、太い罫線、詰まった見出し)。
+ * フレームワークは使わず手書きで統一感を出す。
+ */
+:root {
+  /* 紙の地色と墨。純白・純黒は避けて少し温度を持たせる */
+  --ink: #1a1714;
+  --paper: #f4efe6;
+  --paper-edge: #e7dfd0;
+  --accent: #c8402f; /* 朱。強調・正解線に使う */
+  --muted: #6f675c;
+  --rule: #1a1714;
+
+  --rule-hair: 1px;
+  --rule-bold: 3px;
+
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 2rem;
+  --space-4: 4rem;
+
+  /* 見出しは明朝系、本文はゴシック。投影時の可読性を優先 */
+  --font-display: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  --font-body: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-3);
+}
+
+.masthead {
+  border-top: var(--rule-bold) solid var(--rule);
+  border-bottom: var(--rule-bold) solid var(--rule);
+  padding: var(--space-2) 0;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.4em;
+  color: var(--muted);
+  text-transform: none;
+}
+
+.wordmark {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 12vw, 7rem);
+  line-height: 0.95;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+.scaffold-note {
+  margin-top: var(--space-3);
+  color: var(--muted);
+}
+
+code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  background: var(--paper-edge);
+  padding: 0.1em 0.4em;
+  border-radius: 2px;
+}
