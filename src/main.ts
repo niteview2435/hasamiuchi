@@ -1,4 +1,15 @@
 import "./style.css";
+import { mountControl } from "./control";
+import { mountProjection } from "./projection";
 
-// 画面の実装はここから。まずは設定 → お題表示 → 入力 → 公開・結果 → ランキング
-// の順に組み立てる(仕様 2.3)。得点計算は ./scoring.ts に切り出し済み。
+const app = document.querySelector<HTMLDivElement>("#app");
+if (app) {
+  const isProjection = new URLSearchParams(location.search).get("view") === "projection";
+  document.body.classList.add(isProjection ? "view-projection" : "view-control");
+  if (isProjection) {
+    document.title = "ハサミウチ(投影)";
+    mountProjection(app);
+  } else {
+    mountControl(app);
+  }
+}

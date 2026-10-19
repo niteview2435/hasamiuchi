@@ -1,15 +1,18 @@
 /*
- * デザイントークン。色・余白・タイポはここで一元管理する。
- * 方向性:紙・エディトリアル(明るい地、太い罫線、詰まった見出し)。
- * フレームワークは使わず手書きで統一感を出す。
+ * デザイントークンと全画面のスタイル。
+ * 方向性:紙・エディトリアル(明るい地、太い罫線、詰まった明朝見出し、朱の差し色)。
+ * フレームワークは使わず手書きで統一する。
  */
 :root {
-  /* 紙の地色と墨。純白・純黒は避けて少し温度を持たせる */
   --ink: #1a1714;
   --paper: #f4efe6;
-  --paper-edge: #e7dfd0;
-  --accent: #c8402f; /* 朱。強調・正解線に使う */
+  --paper-2: #ebe3d4;
+  --paper-edge: #ddd3bf;
+  --accent: #c8402f; /* 朱 */
+  --accent-soft: #e7b7af;
+  --gold: #b7892b;
   --muted: #6f675c;
+  --warn: #e8c547;
   --rule: #1a1714;
 
   --rule-hair: 1px;
@@ -20,9 +23,9 @@
   --space-3: 2rem;
   --space-4: 4rem;
 
-  /* 見出しは明朝系、本文はゴシック。投影時の可読性を優先 */
   --font-display: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
   --font-body: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 
 *,
@@ -45,50 +48,538 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: var(--space-4) var(--space-3);
+button {
+  font: inherit;
+  cursor: pointer;
+  border: var(--rule-bold) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.5em 1em;
+  border-radius: 0;
+  transition: background 0.12s, color 0.12s;
+}
+button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+button.primary:hover {
+  background: #a6301f;
+}
+button.ghost {
+  border-width: var(--rule-hair);
+  border-color: var(--muted);
 }
 
-.masthead {
-  border-top: var(--rule-bold) solid var(--rule);
-  border-bottom: var(--rule-bold) solid var(--rule);
-  padding: var(--space-2) 0;
+input,
+select {
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: var(--rule-hair) solid var(--ink);
+  padding: 0.4em 0.5em;
+  border-radius: 0;
+}
+input:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
+.muted {
+  color: var(--muted);
+}
 .kicker {
   margin: 0;
-  font-size: 0.9rem;
   letter-spacing: 0.4em;
   color: var(--muted);
-  text-transform: none;
 }
 
-.wordmark {
-  margin: var(--space-1) 0 0;
+/* ============================ 司会コンソール ============================ */
+
+.control {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.control-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--rule-bold) solid var(--ink);
+}
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.brand-mark {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 12vw, 7rem);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.brand-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+}
+.round-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.round-label {
+  font-variant-numeric: tabular-nums;
+  min-width: 10em;
+  text-align: center;
+}
+.global-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  border: var(--rule-hair) solid var(--muted);
+  padding: 0.5em 1em;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 var(--space-3);
+  border-bottom: var(--rule-hair) solid var(--paper-edge);
+  background: var(--paper-2);
+}
+.tabs button {
+  border: none;
+  border-bottom: var(--rule-bold) solid transparent;
+  background: transparent;
+  padding: 0.8em 1.2em;
+  font-weight: 600;
+}
+.tabs button:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+.tabs button.is-active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+.control-main {
+  flex: 1;
+  padding: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.control-foot {
+  border-top: var(--rule-hair) solid var(--paper-edge);
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.panel {
+  border: var(--rule-hair) solid var(--paper-edge);
+  border-top: var(--rule-bold) solid var(--ink);
+  background: #fff;
+  padding: var(--space-2) var(--space-3);
+}
+.panel h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0 0 var(--space-2);
+  letter-spacing: 0.04em;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-1) 0;
+}
+.field > span {
+  min-width: 8em;
+  color: var(--muted);
+}
+.field input[type="number"],
+.field input[type="text"],
+.field select {
+  flex: 0 1 18rem;
+}
+.field-inline {
+  display: inline-flex;
+  margin-right: var(--space-2);
+}
+.field-inline > span {
+  min-width: 2.2em;
+}
+.field-check {
+  gap: var(--space-1);
+}
+.field-check > span {
+  min-width: 0;
+  color: var(--ink);
+}
+.group-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) 0;
+  margin-top: var(--space-1);
+}
+
+.btn-row {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.q-list,
+.q-detail {
+  margin: var(--space-1) 0 0;
+}
+.q-list em {
+  color: var(--accent);
+  font-style: normal;
+  font-size: 0.85em;
+}
+.q-detail {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3em var(--space-2);
+}
+.q-detail dt {
+  color: var(--muted);
+}
+.q-detail dd {
+  margin: 0;
+}
+.q-detail .source {
+  color: var(--gold);
+  font-size: 0.9em;
+}
+
+.status {
+  margin-top: var(--space-2);
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 入力グリッド */
+.grid-scroll {
+  overflow-x: auto;
+}
+.input-grid,
+.preview-table,
+.ranking-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.input-grid th,
+.input-grid td {
+  border: var(--rule-hair) solid var(--paper-edge);
+  padding: 2px;
+  text-align: center;
+}
+.input-grid thead th {
+  background: var(--paper-2);
+  padding: 0.4em;
+  white-space: nowrap;
+}
+.input-grid .row-head {
+  background: var(--paper-2);
+  padding: 0 0.6em;
+  font-weight: 700;
+}
+.input-grid input {
+  width: 6.5em;
+  border: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+}
+.input-grid input:focus {
+  outline: 2px solid var(--accent);
+  background: #fff;
+}
+.input-grid input.is-warn {
+  background: var(--warn);
+}
+.warn-chip {
+  background: var(--warn);
+  padding: 0 0.4em;
+}
+
+.preview-table th,
+.preview-table td,
+.ranking-table th,
+.ranking-table td {
+  border-bottom: var(--rule-hair) solid var(--paper-edge);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.preview-table .num,
+.ranking-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.preview-table .nums {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+.preview-table .total,
+.ranking-table .total {
+  font-weight: 700;
+}
+.ranking-table.detail th {
+  background: var(--paper-2);
+}
+
+/* ============================ 投影ウィンドウ ============================ */
+
+body.view-projection {
+  background: var(--paper);
+  overflow: hidden;
+}
+body.view-projection #app {
+  height: 100vh;
+}
+.proj-slide {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4vmin 6vmin;
+}
+
+.proj-blank {
+  align-items: flex-start;
+  justify-content: center;
+}
+.wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18vmin;
   line-height: 0.95;
   letter-spacing: 0.08em;
   font-weight: 700;
 }
-
 .subtitle {
-  margin: var(--space-1) 0 0;
+  margin: 0.5vmin 0 0;
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 4vmin;
+  color: var(--accent);
+}
+.proj-blank .kicker {
+  font-size: 2.4vmin;
+}
+
+.proj-question .round-no {
+  font-family: var(--font-display);
+  font-size: 4vmin;
+  color: var(--accent);
+  margin: 0 0 2vmin;
+  letter-spacing: 0.1em;
+}
+.q-title {
+  font-family: var(--font-display);
+  font-size: 11vmin;
+  line-height: 1.05;
+  margin: 0;
+  font-weight: 700;
+}
+.q-hint {
+  font-size: 4.5vmin;
+  margin: 3vmin 0 0;
+}
+.q-unit {
+  font-size: 3.5vmin;
+  color: var(--muted);
+  margin: 2vmin 0 0;
+}
+.awaiting {
+  font-size: 6vmin;
+  color: var(--muted);
+}
+.proj-timer {
+  margin-top: 4vmin;
+  font-variant-numeric: tabular-nums;
+}
+.proj-timer .clock {
+  font-family: var(--font-display);
+  font-size: 14vmin;
+  font-weight: 700;
+}
+
+.proj-reveal {
+  justify-content: flex-start;
+  padding: 2vmin 3vmin;
+}
+.proj-reveal .round-no {
+  font-family: var(--font-display);
+  font-size: 3vmin;
+  margin: 0 0 1vmin;
+  color: var(--accent);
+}
+.chart-wrap {
+  flex: 1;
+  min-height: 0;
+}
+.ladder-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.proj-badges {
+  display: flex;
+  gap: 2vmin;
+  flex-wrap: wrap;
+  margin-top: 1vmin;
+}
+.badge {
+  font-size: 2.6vmin;
+  font-weight: 700;
+  padding: 0.4em 0.8em;
+  border: var(--rule-bold) solid var(--ink);
+}
+.badge-pitari {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.badge-mvp {
+  background: var(--gold);
+  color: #fff;
+  border-color: var(--gold);
+}
+
+.proj-ranking {
+  justify-content: flex-start;
+  padding: 4vmin 8vmin;
+}
+.proj-ranking .round-no {
+  font-family: var(--font-display);
+  font-size: 5vmin;
+  color: var(--accent);
+  margin: 0 0 3vmin;
+}
+.proj-ranking .ranking-table {
+  font-size: 4vmin;
+}
+.proj-ranking .ranking-table th,
+.proj-ranking .ranking-table td {
+  border-bottom: var(--rule-bold) solid var(--ink);
+  padding: 1.2vmin 2vmin;
+  text-align: left;
+}
+.proj-ranking .ranking-table .rank {
+  width: 3em;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.proj-ranking .ranking-table .total {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.proj-ranking .ranking-table tr:first-child .total {
   color: var(--accent);
 }
 
-.scaffold-note {
-  margin-top: var(--space-3);
-  color: var(--muted);
+/* ---- SVG チャートの描画 ---- */
+.ladder-chart .grid {
+  stroke: var(--paper-edge);
+  stroke-width: 1;
 }
-
-code {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
-  background: var(--paper-edge);
-  padding: 0.1em 0.4em;
-  border-radius: 2px;
+.ladder-chart .grid-label {
+  fill: var(--muted);
+  font-size: 15px;
+  font-family: var(--font-body);
+}
+.ladder-chart .rail {
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.ladder-chart .rung {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+.ladder-chart .rung.is-exact {
+  stroke: var(--accent);
+  stroke-width: 7;
+}
+.ladder-chart .rung-label {
+  fill: var(--ink);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.ladder-chart .band {
+  fill: var(--accent-soft);
+  opacity: 0.6;
+}
+.ladder-chart .group-name {
+  fill: var(--ink);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+.ladder-chart .score-label {
+  fill: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+}
+.ladder-chart .score-label.is-zero {
+  fill: var(--muted);
+}
+.ladder-chart .ladder-group.is-dim {
+  opacity: 0.32;
+}
+.ladder-chart .answer-line line {
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-dasharray: 2 10;
+  stroke-linecap: round;
+}
+.ladder-chart .answer-line text {
+  fill: var(--accent);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+.ladder-chart .answer-line {
+  animation: answer-drop 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes answer-drop {
+  from {
+    transform: translateY(-40vh);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ladder-chart .answer-line {
+    animation: none;
+  }
 }

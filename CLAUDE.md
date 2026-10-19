@@ -44,14 +44,35 @@ direnv を使わない場合は `nix develop` で同じ shell に入れる。
 - 画面構成: 設定 → お題表示(投影) → 入力(司会) → 公開・結果(投影) → ランキング(投影)。
   司会画面と投影画面は切り替えられること(入力中は投影に数字を出さない)。
 
+### 画面の分離(投影の仕組み)
+
+司会操作ウィンドウと投影ウィンドウは**別ウィンドウ**(`?view=projection`)に分け、
+`localStorage` + `BroadcastChannel`(`state.ts`)で同期する。拡張ディスプレイで投影側を
+プロジェクタに出し、手元で制御する想定。司会が入力中でも投影に数字が出ない。
+
+- 司会ウィンドウは入力フォーカスを守るため state 購読での全体再描画をしない。
+  操作後に必要な部分だけ描き直す(`control.ts`)。
+- 投影ウィンドウは state を購読し、`projection.screen`(blank/question/reveal/ranking)に
+  応じて丸ごと描き直す(`projection.ts`)。
+
+走者は「位置」(第1〜第m走者)として扱い、個人名は持たない。オプションのうち実装済みは
+タイマーのみ(段の宣言・走順くじは未実装)。
+
 ### ディレクトリ
 
 ```
 src/
-  main.ts        エントリ。画面を組み立てる
+  main.ts        エントリ。view で司会/投影を振り分ける
+  types.ts       ドメイン型 + 初期状態(純粋)
+  state.ts       状態ストア。localStorage 永続化 + BroadcastChannel 同期 + JSON入出力
   scoring.ts     得点計算(純粋関数)。UI から切り離す
-  scoring.test.ts
-  style.css      デザイントークン + スタイル
+  scoring.test.ts  仕様 1.10 / 1.5 の回帰テスト
+  results.ts     ラウンド結果・累計の集計(scoring を利用)
+  format.ts      数値・得点・比の整形
+  chart.ts       はしごの対数グラフを SVG 文字列で手描き
+  control.ts     司会コンソール(設定/お題/入力/公開・結果/ランキング)
+  projection.ts  投影ウィンドウ(表示専用)
+  style.css      デザイントークン + 全画面スタイル
 samples/         サンプルお題(リポジトリに入れてよいのはサンプルのみ)
 ```
 

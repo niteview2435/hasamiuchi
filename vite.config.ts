@@ -7,5 +7,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    // .direnv(flake インプットの nixpkgs など)を拾わないよう src に限定する
+    include: ["src/**/*.{test,spec}.ts"],
   },
 });
