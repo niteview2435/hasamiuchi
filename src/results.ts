@@ -6,9 +6,9 @@ import { roundAnswer, roundQuestion } from "./types";
 
 export interface GroupResult {
   name: string;
-  /** 入力されたはしごの値(null を除いた入力順)。 */
+  /** 入力された数字(null を除いた入力順)。 */
   values: number[];
-  /** 正解とはしごが揃っていなければ null。 */
+  /** 正解と数字が揃っていなければ null。 */
   score: TeamScore | null;
   /** ピタリ賞の加点。 */
   bonus: number;
@@ -19,7 +19,7 @@ export interface GroupResult {
 export function computeRoundResults(state: AppState, round: Round): GroupResult[] {
   const answer = roundAnswer(state, round);
   const unit = roundQuestion(state, round)?.unit ?? 1;
-  // 走者数ハンデ:段の得点ペナルティを (そのチームの走者数-1)/(最大走者数-1) 倍する。
+  // 人数ハンデ:得点ペナルティを (その人数-1)/(最大人数-1) 倍する。
   // 全チーム同数なら係数は 1 で無影響。
   const counts = state.settings.runnerCounts;
   const maxM = Math.max(1, ...counts);
