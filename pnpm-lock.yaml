@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@fontsource/zen-kaku-gothic-new':
+        specifier: ^5.3.1
+        version: 5.3.1
     devDependencies:
       typescript:
         specifier: ^5.6.0
@@ -313,6 +317,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource/zen-kaku-gothic-new@5.3.1':
+    resolution: {integrity: sha512-L69mE6bkzeVK3UdTenxOmCIWvTwMxohJRNm1dAj+W+UiCULQ91b7M77ENVw+pjGmFL6zKPFYFeH3g8x2ugAJNw==}
 
   '@jridgewell/sourcemap-codec@1.6.0':
     resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
@@ -888,6 +895,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.12':
     optional: true
+
+  '@fontsource/zen-kaku-gothic-new@5.3.1': {}
 
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
