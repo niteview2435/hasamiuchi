@@ -1,6 +1,6 @@
 /*
  * デザイントークンと全画面のスタイル。
- * 方向性:紙・エディトリアル(明るい地、太い罫線、詰まった明朝見出し、朱の差し色)。
+ * 方向性:紙・エディトリアル(明るい地、太い罫線、太ゴシックの見出し、朱の差し色)。
  * フレームワークは使わず手書きで統一する。
  */
 :root {
@@ -23,7 +23,7 @@
   --space-3: 2rem;
   --space-4: 4rem;
 
-  --font-display: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  --font-display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
   --font-body: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
@@ -200,6 +200,79 @@ select:focus {
   border-top: var(--rule-bold) solid var(--ink);
   background: #fff;
   padding: var(--space-2) var(--space-3);
+}
+
+/* 拡大率スライダー(結果タブ) */
+.zoom-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-1) 0;
+}
+.zoom-slider input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.zoom-slider input[type="range"]:disabled {
+  opacity: 0.4;
+}
+.zoom-value {
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5em;
+  text-align: right;
+  font-weight: 700;
+}
+
+/* 投影プレビュー(全タブ共通・画面右下に固定) */
+.proj-preview {
+  position: fixed;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  width: 320px;
+  background: var(--paper);
+  border: var(--rule-hair) solid var(--ink);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+}
+.proj-preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: 0.3em 0.6em;
+  border-bottom: var(--rule-hair) solid var(--paper-edge);
+  background: var(--ink);
+  color: var(--paper);
+}
+.proj-preview-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.proj-preview-bar button {
+  padding: 0.2em 0.7em;
+  font-size: 0.75rem;
+  background: transparent;
+  color: var(--paper);
+  border: var(--rule-hair) solid var(--paper);
+}
+.proj-preview-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--paper);
+}
+.proj-preview-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none; /* プレビューは閲覧専用 */
+}
+.proj-preview.is-collapsed .proj-preview-frame {
+  display: none;
 }
 .panel h2 {
   font-family: var(--font-display);
@@ -406,26 +479,10 @@ body.view-projection #app {
   padding: 4vmin 6vmin;
 }
 
-.proj-blank {
-  align-items: flex-start;
+/* 表紙スライド(中身・座標は slides.config.ts の COVER) */
+.proj-cover {
   justify-content: center;
-}
-.wordmark {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 18vmin;
-  line-height: 0.95;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-}
-.subtitle {
-  margin: 0.5vmin 0 0;
-  font-family: var(--font-display);
-  font-size: 4vmin;
-  color: var(--accent);
-}
-.proj-blank .kicker {
-  font-size: 2.4vmin;
+  padding: 2vmin;
 }
 
 .proj-question .round-no {
@@ -440,7 +497,7 @@ body.view-projection #app {
   font-size: 11vmin;
   line-height: 1.05;
   margin: 0;
-  font-weight: 700;
+  font-weight: 900;
 }
 .q-hint {
   font-size: 4.5vmin;
@@ -462,7 +519,7 @@ body.view-projection #app {
 .proj-timer .clock {
   font-family: var(--font-display);
   font-size: 14vmin;
-  font-weight: 700;
+  font-weight: 900;
 }
 
 .proj-reveal {
@@ -514,7 +571,7 @@ body.view-projection #app {
   margin: 0 auto;
   color: var(--accent);
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 900;
   font-size: 5.5vmin;
   letter-spacing: 0.04em;
 }
@@ -633,4 +690,147 @@ body.view-projection #app {
   .ladder-chart .answer-line.drop {
     animation: none;
   }
+}
+
+/* ---- ルール説明スライド(投影) ---- */
+/* 中身・座標は howto.config.ts。ここは 1 枚のキャンバス(SVG)の見た目だけ。 */
+.proj-howto {
+  justify-content: center;
+  padding: 1.5vmin 2vmin;
+}
+.howto-canvas {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+.howto-canvas text {
+  font-family: var(--font-display);
+}
+
+/* 色(config の color に対応) */
+.howto-canvas .howto-c-ink {
+  fill: var(--ink);
+}
+.howto-canvas .howto-c-accent {
+  fill: var(--accent);
+}
+.howto-canvas .howto-c-muted {
+  fill: var(--muted);
+}
+.howto-canvas .howto-c-paper {
+  fill: var(--paper);
+}
+.howto-canvas .howto-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 人のアイコン */
+.howto-canvas .howto-person {
+  fill: var(--ink);
+  opacity: 0.55;
+}
+.howto-canvas .howto-person.is-active {
+  fill: var(--accent);
+  opacity: 1;
+}
+
+/* 線 */
+.howto-canvas .howto-vl {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+.howto-canvas .howto-hl {
+  stroke-linecap: round;
+}
+.howto-canvas .howto-hl-number {
+  stroke: var(--ink);
+  stroke-width: 6;
+}
+.howto-canvas .howto-hl-active {
+  stroke: var(--accent);
+  stroke-width: 9;
+}
+.howto-canvas .howto-hl-thin {
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+.howto-canvas .howto-hl-answer {
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-dasharray: 2 10;
+}
+
+/* 四角・帯 */
+.howto-canvas .howto-rect-none {
+  fill: none;
+}
+.howto-canvas .howto-rect-band {
+  fill: var(--accent-soft);
+  opacity: 0.6;
+}
+.howto-canvas .howto-rect-accent {
+  fill: var(--accent);
+}
+.howto-canvas .howto-rect.is-stroke {
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+/* バッジ */
+.howto-canvas .howto-badge rect {
+  fill: var(--accent);
+}
+.howto-canvas .howto-badge text {
+  fill: #fff;
+  font-weight: 900;
+}
+
+/* 正解線の落下アニメーション(公開時だけ) */
+.howto-canvas .howto-drop {
+  animation: answer-drop 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .howto-canvas .howto-drop {
+    animation: none;
+  }
+}
+
+/* ステップ進行のドット */
+.howto-dots {
+  display: flex;
+  gap: 1.2vmin;
+  justify-content: center;
+  padding-top: 1vmin;
+}
+.howto-dot {
+  width: 1.6vmin;
+  height: 1.6vmin;
+  border: var(--rule-hair) solid var(--muted);
+  background: transparent;
+}
+.howto-dot.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* 司会コンソール:ステップ一覧 */
+.howto-steplist {
+  margin: var(--space-1) 0 0;
+  padding-left: 1.4em;
+}
+.howto-steplist li {
+  margin: 0.2em 0;
+}
+.howto-steplist button {
+  border: none;
+  background: none;
+  padding: 0.1em 0.3em;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.howto-steplist li.is-current button {
+  color: var(--accent);
+  font-weight: 700;
 }

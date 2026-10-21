@@ -3,6 +3,7 @@
 
 import { buildLadderChart, type ChartGroup } from "./chart";
 import { formatNumber, formatScore } from "./format";
+import { buildCoverSlide, buildHowtoSlide } from "./slides";
 import { computeRoundResults, cumulativeTotals, type GroupResult } from "./results";
 import { getState, subscribe } from "./state";
 import type { AppState, TimerState } from "./types";
@@ -35,7 +36,7 @@ function toChartGroup(r: GroupResult): ChartGroup {
   if (!s) return base;
   base.score = s.score;
   base.ratio = s.ratio;
-  base.exactValue = s.pitariValue; // ピタリの段を赤く強調する
+  base.exactValue = s.pitariValue; // ピタリの数字を赤く強調する
   switch (s.placement.kind) {
     case "below":
     case "above":
@@ -55,12 +56,12 @@ function esc(s: string): string {
 }
 
 /**
- * 正解付近のズーム窓。正解に「最も近い段」(= 一番きつい挟み)を基準にする。
- * 広く挟んだチームの遠い段に引っ張られて窓が広がらないようにする。
+ * 正解付近のズーム窓。正解に「最も近い数字」(= 一番きつい挟み)を基準にする。
+ * 広く挟んだチームの遠い数字に引っ張られて窓が広がらないようにする。
  */
 function focusWindow(results: GroupResult[], answer: number): { min: number; max: number } {
-  let nearBelow = Number.NEGATIVE_INFINITY; // 正解以下で最も高い段
-  let nearAbove = Number.POSITIVE_INFINITY; // 正解以上で最も低い段
+  let nearBelow = Number.NEGATIVE_INFINITY; // 正解以下で最も高い数字
+  let nearAbove = Number.POSITIVE_INFINITY; // 正解以上で最も低い数字
   for (const r of results) {
     for (const v of r.values) {
       if (v <= answer && v > nearBelow) nearBelow = v;
@@ -70,7 +71,7 @@ function focusWindow(results: GroupResult[], answer: number): { min: number; max
   if (!Number.isFinite(nearBelow)) nearBelow = answer;
   if (!Number.isFinite(nearAbove)) nearAbove = answer;
 
-  // 対数で左右に余白を足して近傍の段も少し見えるようにする。
+  // 対数で左右に余白を足して近くの数字も少し見えるようにする。
   // きつい挟みでも潰れないよう最小の余白を設ける。
   const logLo = Math.log10(Math.max(nearBelow, 1));
   const logHi = Math.log10(Math.max(nearAbove, 1));
@@ -82,12 +83,7 @@ function focusWindow(results: GroupResult[], answer: number): { min: number; max
 }
 
 function renderBlank(): string {
-  return `
-    <div class="proj-slide proj-blank">
-      <p class="kicker">チーム対抗・数字当て</p>
-      <h1 class="wordmark">ハサミウチ</h1>
-      <p class="subtitle">― 刻むか、跳ぶか ―</p>
-    </div>`;
+  return buildCoverSlide();
 }
 
 function renderQuestion(state: AppState): string {
@@ -135,6 +131,22 @@ function targetZoom(results: GroupResult[], answer: number): number {
   const fullSpan = full.max - full.min;
   if (targetSpan <= 0 || fullSpan <= 0) return 1;
   return Math.min(12, Math.max(1, fullSpan / targetSpan));
+}
+
+/** 拡大率の上限(スライダー・自動フィット共通)。 */
+export const MAX_ZOOM = 12;
+
+/**
+ * 現在のラウンド・正解に対する「正解付近へ自動フィット」の倍率。
+ * 司会コンソールの「自動」ボタンやスライダー初期値に使う。正解が無ければ 1。
+ */
+export function autoFitZoom(state: AppState): number {
+  const round = state.rounds[state.currentRound];
+  if (!round) return 1;
+  const q = roundQuestion(state, round);
+  const answerVal = round.answerOverride ?? (q ? q.answer : null);
+  if (answerVal == null) return 1;
+  return targetZoom(computeRoundResults(state, round), answerVal);
 }
 
 /**
@@ -256,7 +268,8 @@ export function mountProjection(root: HTMLElement): void {
 
     let target = 1;
     if (round && state.projection.zoomed && state.projection.answerRevealed && answerVal != null) {
-      target = targetZoom(computeRoundResults(state, round), answerVal);
+      // 倍率は司会コンソールのスライダー(zoomLevel)で指定する。
+      target = Math.min(MAX_ZOOM, Math.max(1, state.projection.zoomLevel || 1));
     }
 
     // 既に目標倍率付近なら静止描画。初回公開(倍率1)では正解線のドロップ演出を出す。
@@ -282,6 +295,9 @@ export function mountProjection(root: HTMLElement): void {
   const render = (state: AppState): void => {
     let html: string;
     switch (state.projection.screen) {
+      case "howto":
+        html = buildHowtoSlide(state.projection.howtoStep);
+        break;
       case "question":
         html = renderQuestion(state);
         break;

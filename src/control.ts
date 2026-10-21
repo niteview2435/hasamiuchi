@@ -5,7 +5,16 @@
 // 全体再描画はしない。各操作のあとに必要な部分だけ描き直す。
 
 import { formatNumber, formatScore } from "./format";
+import {
+  HOWTO_AUTO,
+  HOWTO_PAGE_COUNT,
+  HOWTO_PAGE_TITLES,
+  HOWTO_STEP_COUNT,
+  howtoPageOf,
+  howtoPageStart,
+} from "./slides";
 import { computeRoundResults, cumulativeTotals } from "./results";
+import { MAX_ZOOM, autoFitZoom } from "./projection";
 import {
   exportStateJson,
   getState,
@@ -21,10 +30,11 @@ import {
   roundQuestion,
 } from "./types";
 
-type Tab = "settings" | "question" | "input" | "reveal" | "ranking";
+type Tab = "settings" | "howto" | "question" | "input" | "reveal" | "ranking";
 
 const TAB_LABELS: Record<Tab, string> = {
   settings: "設定",
+  howto: "説明",
   question: "お題",
   input: "入力",
   reveal: "公開・結果",
@@ -32,6 +42,17 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 let activeTab: Tab = "settings";
+
+// 説明スライドの自動送り:「1人目」が出たら最後の人まで勝手に進む(次へ 1 回ぶんの予約)。
+let howtoTimer: number | null = null;
+// 司会が「停止」を押している間は自動送りしない(手動の戻る/次へは効く)。
+let howtoPaused = false;
+function stopHowtoAuto(): void {
+  if (howtoTimer != null) {
+    window.clearTimeout(howtoTimer);
+    howtoTimer = null;
+  }
+}
 
 function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
@@ -71,7 +92,7 @@ function renderSettings(state: AppState): string {
         `<div class="group-row">
            <span class="g-tag">G${i + 1}</span>
            <input type="text" data-group-name="${i}" value="${esc(name)}" />
-           <label class="rc">走者数 <input type="number" min="1" max="20" data-group-runners="${i}" value="${s.runnerCounts[i] ?? 8}" /></label>
+           <label class="rc">人数 <input type="number" min="1" max="20" data-group-runners="${i}" value="${s.runnerCounts[i] ?? 8}" /></label>
          </div>`,
     )
     .join("");
@@ -90,10 +111,10 @@ function renderSettings(state: AppState): string {
       <h2>グループ</h2>
       <label class="field"><span>グループ数</span>
         <input type="number" min="1" max="26" data-group-count value="${s.groups.length}" /></label>
-      <label class="field"><span>走者数を一括</span>
+      <label class="field"><span>人数を一括</span>
         <input type="number" min="1" max="20" data-runners-all placeholder="全グループに適用" /></label>
       <div class="group-rows">${nameInputs}</div>
-      <p class="muted">グループごとに走者数(人数)を変えられます。</p>
+      <p class="muted">グループごとに人数を変えられます。</p>
     </section>
 
     <section class="panel">
@@ -103,7 +124,7 @@ function renderSettings(state: AppState): string {
       <label class="field"><span>ピタリ賞</span>
         <input type="number" min="0" step="1" data-pitari value="${s.pitariBonus}" /></label>
       <label class="field field-check"><input type="checkbox" data-timer-enabled ${s.timerEnabled ? "checked" : ""} /><span>お題画面にタイマーを表示</span></label>
-      <label class="field field-check"><input type="checkbox" data-handicap ${s.handicap ? "checked" : ""} /><span>走者数ハンデ(人数差を補正。同数なら無影響)</span></label>
+      <label class="field field-check"><input type="checkbox" data-handicap ${s.handicap ? "checked" : ""} /><span>人数ハンデ(人数差を補正。同数なら無影響)</span></label>
     </section>
 
     <section class="panel">
@@ -111,6 +132,39 @@ function renderSettings(state: AppState): string {
       <p class="muted">本番の正解はリポジトリに入れません。司会PCのローカルJSONを読み込みます。</p>
       <input type="file" accept="application/json,.json" data-question-file />
       <div data-question-list>${qList}</div>
+    </section>`;
+}
+
+function renderHowtoTab(state: AppState): string {
+  const p = state.projection;
+  const onHowto = p.screen === "howto";
+  const step = p.howtoStep;
+  const page = howtoPageOf(step);
+  const list = HOWTO_PAGE_TITLES.map(
+    (t, i) =>
+      `<li class="${onHowto && i === page ? "is-current" : ""}"><button data-howto-go="${howtoPageStart(i)}">${i + 1}. ${esc(t)}</button></li>`,
+  ).join("");
+
+  return `
+    <section class="panel">
+      <h2>ルール説明スライド</h2>
+      <p class="muted">人のアイコンと具体例(富士山の登山者数)で、1人ずつ数字を出して正解をはさむ流れを見せます。「1人目」が出ると、そこから「最後の人」まで ${HOWTO_AUTO.sec} 秒ごとに自動で進み、最後まで行くと「1人目」に戻ってループします(間隔は slides.config.ts の AUTO_ADVANCE。「次へ」を押せば先へ進みます)。</p>
+      <div class="btn-row">
+        <button data-howto-open class="primary">投影に説明を表示</button>
+        <button data-howto-playpause>${howtoPaused ? "▶ 再生" : "⏸ 停止"}</button>
+        <button data-howto-restart class="ghost">最初から</button>
+      </div>
+      <div class="btn-row">
+        <button data-howto-prev>◀ 戻る</button>
+        <span class="status">${onHowto ? `ステップ ${page + 1} / ${HOWTO_PAGE_COUNT}(${esc(HOWTO_PAGE_TITLES[page] ?? "")})${howtoPaused ? " ・停止中" : ""}` : "投影外"}</span>
+        <button data-howto-next class="primary">次へ ▶</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>ステップ一覧</h2>
+      <p class="muted">クリックでそのステップへ飛べます。</p>
+      <ol class="howto-steplist">${list}</ol>
     </section>`;
 }
 
@@ -170,7 +224,7 @@ function renderInput(state: AppState): string {
   const counts = state.settings.runnerCounts;
   const maxM = Math.max(1, ...counts);
 
-  const headerCells = Array.from({ length: maxM }, (_, ri) => `<th>第${ri + 1}走者</th>`).join("");
+  const headerCells = Array.from({ length: maxM }, (_, ri) => `<th>${ri + 1}人目</th>`).join("");
   const rows = state.settings.groups
     .map((name, gi) => {
       const m = counts[gi] ?? 0;
@@ -185,8 +239,8 @@ function renderInput(state: AppState): string {
 
   return `
     <section class="panel">
-      <h2>はしごの入力(第 ${state.currentRound + 1} ラウンド)</h2>
-      <p class="muted">単位 ${formatNumber(unit)} ${esc(q?.unitLabel ?? "")} の倍数 / 前の走者より大きい。違反は<span class="warn-chip">黄色</span>で警告しますが、確定は司会の判断で可能です。Enter で次のセルへ。投影には数字を出しません。</p>
+      <h2>数字の入力(第 ${state.currentRound + 1} ラウンド)</h2>
+      <p class="muted">単位 ${formatNumber(unit)} ${esc(q?.unitLabel ?? "")} の倍数 / 前の人より大きい。違反は<span class="warn-chip">黄色</span>で警告しますが、確定は司会の判断で可能です。Enter で次のセルへ。投影には数字を出しません。</p>
       <div class="grid-scroll">
         <table class="input-grid">
           <thead><tr><th>グループ</th>${headerCells}</tr></thead>
@@ -210,10 +264,10 @@ function revealPreviewTable(state: AppState): string {
       if (r.score) {
         switch (r.score.placement.kind) {
           case "below":
-            placement = "はしごの外(下)";
+            placement = "外れ(下)";
             break;
           case "above":
-            placement = "はしごの外(上)";
+            placement = "外れ(上)";
             break;
           case "exact":
             placement = "ピタリ一致";
@@ -235,7 +289,7 @@ function revealPreviewTable(state: AppState): string {
     .join("");
   return `
     <table class="preview-table">
-      <thead><tr><th>グループ</th><th>はしご</th><th>正解の位置</th><th>得点</th><th>賞</th><th>計</th></tr></thead>
+      <thead><tr><th>グループ</th><th>出した数字</th><th>正解の位置</th><th>得点</th><th>賞</th><th>計</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <p class="muted">現在の正解:${answer == null ? "<em>未設定</em>" : formatNumber(answer)}</p>`;
@@ -252,15 +306,20 @@ function renderReveal(state: AppState): string {
       <h2>公開・結果(第 ${state.currentRound + 1} ラウンド)</h2>
       <div class="btn-row">
         <button data-reveal-open class="primary">結果画面を投影</button>
-        <button data-reveal-ladders>① はしごを一斉表示</button>
+        <button data-reveal-ladders>① 数字を一斉表示</button>
         <button data-reveal-answer>② 正解を表示</button>
         <button data-reveal-hide class="ghost">隠す(やり直し)</button>
       </div>
       <div class="btn-row">
-        <button data-reveal-zoom>③ 正解付近を拡大</button>
+        <button data-reveal-zoom>③ 正解付近を拡大(自動)</button>
         <button data-reveal-unzoom class="ghost">全体に戻す</button>
       </div>
-      <p class="status">投影:${p.screen === "reveal" ? "結果画面" : p.screen} / はしご ${p.laddersRevealed ? "表示" : "非表示"} / 正解 ${p.answerRevealed ? "表示" : "非表示"} / 表示 ${p.zoomed ? "拡大" : "全体"}</p>
+      <label class="zoom-slider">
+        <span>拡大率</span>
+        <input type="range" min="1" max="${MAX_ZOOM}" step="0.1" value="${(p.zoomLevel || 1).toFixed(1)}" data-zoom-range ${p.answerRevealed ? "" : "disabled"} />
+        <span class="zoom-value" data-zoom-value>${(p.zoomLevel || 1).toFixed(1)}×</span>
+      </label>
+      <p class="status">投影:${p.screen === "reveal" ? "結果画面" : p.screen} / 数字 ${p.laddersRevealed ? "表示" : "非表示"} / 正解 ${p.answerRevealed ? "表示" : "非表示"} / 表示 ${p.zoomed ? "拡大" : "全体"}</p>
     </section>
 
     <section class="panel">
@@ -334,12 +393,31 @@ export function mountControl(root: HTMLElement): void {
       <nav class="tabs" data-tabs></nav>
       <main class="control-main" data-main></main>
       <footer class="control-foot"><span data-proj-status></span></footer>
+      <aside class="proj-preview" data-preview>
+        <div class="proj-preview-bar">
+          <span class="proj-preview-title">投影プレビュー</span>
+          <button data-preview-toggle class="ghost" title="プレビューの表示/非表示">隠す</button>
+        </div>
+        <div class="proj-preview-frame">
+          <iframe data-preview-iframe title="投影プレビュー"></iframe>
+        </div>
+      </aside>
     </div>`;
 
   const tabsEl = root.querySelector<HTMLElement>("[data-tabs]")!;
   const main = root.querySelector<HTMLElement>("[data-main]")!;
   const roundLabel = root.querySelector<HTMLElement>("[data-round-label]")!;
   const projStatus = root.querySelector<HTMLElement>("[data-proj-status]")!;
+
+  // 投影プレビュー:投影ビューを iframe で埋め込むだけ。state は
+  // localStorage + BroadcastChannel で同期されるので、ここで再描画は不要。
+  const previewPanel = root.querySelector<HTMLElement>("[data-preview]")!;
+  const previewFrame = root.querySelector<HTMLIFrameElement>("[data-preview-iframe]")!;
+  previewFrame.src = `${location.pathname}?view=projection`;
+  root.querySelector("[data-preview-toggle]")?.addEventListener("click", (e) => {
+    const collapsed = previewPanel.classList.toggle("is-collapsed");
+    (e.currentTarget as HTMLButtonElement).textContent = collapsed ? "表示" : "隠す";
+  });
 
   tabsEl.innerHTML = (Object.keys(TAB_LABELS) as Tab[])
     .map((t) => `<button data-tab="${t}">${TAB_LABELS[t]}</button>`)
@@ -350,6 +428,7 @@ export function mountControl(root: HTMLElement): void {
     roundLabel.textContent = `第 ${state.currentRound + 1} / ${state.rounds.length} ラウンド`;
     const screenName: Record<string, string> = {
       blank: "ブランク",
+      howto: "ルール説明",
       question: "お題",
       reveal: "結果",
       ranking: "ランキング",
@@ -366,6 +445,10 @@ export function mountControl(root: HTMLElement): void {
       case "settings":
         main.innerHTML = renderSettings(state);
         bindSettings();
+        break;
+      case "howto":
+        main.innerHTML = renderHowtoTab(state);
+        bindHowto();
         break;
       case "question":
         main.innerHTML = renderQuestionTab(state);
@@ -452,6 +535,53 @@ export function mountControl(root: HTMLElement): void {
     });
   }
 
+  function bindHowto(): void {
+    const setStep = (next: number): void => {
+      update((s) => {
+        s.projection.screen = "howto";
+        s.projection.howtoStep = Math.max(0, Math.min(HOWTO_STEP_COUNT - 1, next));
+      });
+      renderActive();
+    };
+    main.querySelector("[data-howto-open]")?.addEventListener("click", () => {
+      update((s) => (s.projection.screen = "howto"));
+      renderActive();
+    });
+    main.querySelector("[data-howto-playpause]")?.addEventListener("click", () => {
+      howtoPaused = !howtoPaused;
+      renderActive(); // ボタン表示を更新し、bindHowto で予約し直す/止める
+    });
+    main.querySelector("[data-howto-restart]")?.addEventListener("click", () => setStep(0));
+    main.querySelector("[data-howto-prev]")?.addEventListener("click", () =>
+      setStep(getState().projection.howtoStep - 1),
+    );
+    main.querySelector("[data-howto-next]")?.addEventListener("click", () =>
+      setStep(getState().projection.howtoStep + 1),
+    );
+    main.querySelectorAll<HTMLButtonElement>("[data-howto-go]").forEach((btn) => {
+      btn.addEventListener("click", () => setStep(Number(btn.dataset.howtoGo)));
+    });
+
+    // 自動送り:「1人目」〜「最後の人」の範囲にいる間は、一定秒で勝手に次へ進む。
+    // 最後まで行ったら「1人目」へ戻ってループする(「次へ」を押せば先のスライドへ抜ける)。
+    // 各描画のたびに予約し直す(setStep → 再描画 → ここで次を予約、の連鎖)。
+    stopHowtoAuto();
+    const p = getState().projection;
+    if (
+      !howtoPaused &&
+      HOWTO_AUTO.sec > 0 &&
+      HOWTO_AUTO.from >= 0 &&
+      p.screen === "howto" &&
+      p.howtoStep >= HOWTO_AUTO.from &&
+      p.howtoStep <= HOWTO_AUTO.to
+    ) {
+      howtoTimer = window.setTimeout(() => {
+        const cur = getState().projection.howtoStep;
+        setStep(cur < HOWTO_AUTO.to ? cur + 1 : HOWTO_AUTO.from);
+      }, HOWTO_AUTO.sec * 1000);
+    }
+  }
+
   function bindQuestion(): void {
     main.querySelector<HTMLSelectElement>("[data-question-select]")?.addEventListener("change", (e) => {
       const val = (e.target as HTMLSelectElement).value;
@@ -469,6 +599,8 @@ export function mountControl(root: HTMLElement): void {
             laddersRevealed: false,
             answerRevealed: false,
             zoomed: false,
+            zoomLevel: 1,
+            howtoStep: s.projection.howtoStep,
           }),
       );
       refreshChrome();
@@ -609,15 +741,33 @@ export function mountControl(root: HTMLElement): void {
         alert("先に「② 正解を表示」してから拡大してください。");
         return;
       }
+      const fit = autoFitZoom(getState());
       update((s) => {
         s.projection.screen = "reveal";
         s.projection.zoomed = true;
+        s.projection.zoomLevel = fit;
+      });
+      renderActive(); // スライダーを自動フィット値に合わせる
+    });
+    main.querySelector("[data-reveal-unzoom]")?.addEventListener("click", () => {
+      update((s) => {
+        s.projection.zoomed = false;
+        s.projection.zoomLevel = 1;
       });
       renderActive();
     });
-    main.querySelector("[data-reveal-unzoom]")?.addEventListener("click", () => {
-      update((s) => (s.projection.zoomed = false));
-      renderActive();
+    // 拡大率スライダー。ドラッグ中はフォーカスを守るため再描画せず、state と
+    // 数値ラベルだけ更新する(投影・プレビューは同期で追従)。
+    const zoomRange = main.querySelector<HTMLInputElement>("[data-zoom-range]");
+    const zoomValue = main.querySelector<HTMLElement>("[data-zoom-value]");
+    zoomRange?.addEventListener("input", () => {
+      const v = Math.min(MAX_ZOOM, Math.max(1, Number(zoomRange.value) || 1));
+      if (zoomValue) zoomValue.textContent = `${v.toFixed(1)}×`;
+      update((s) => {
+        s.projection.screen = "reveal";
+        s.projection.zoomed = v > 1.0001;
+        s.projection.zoomLevel = v;
+      });
     });
     main.querySelector("[data-answer-apply]")?.addEventListener("click", () => {
       const raw = main.querySelector<HTMLInputElement>("[data-answer]")?.value.trim() ?? "";
@@ -648,6 +798,7 @@ export function mountControl(root: HTMLElement): void {
 
   tabsEl.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
+      stopHowtoAuto();
       activeTab = btn.dataset.tab as Tab;
       renderActive();
     });
@@ -669,7 +820,14 @@ export function mountControl(root: HTMLElement): void {
     update((s) => {
       s.rounds.push(makeEmptyRound(s.settings.runnerCounts));
       s.currentRound = s.rounds.length - 1;
-      s.projection = { screen: "blank", laddersRevealed: false, answerRevealed: false, zoomed: false };
+      s.projection = {
+        screen: "blank",
+        laddersRevealed: false,
+        answerRevealed: false,
+        zoomed: false,
+        zoomLevel: 1,
+        howtoStep: 0,
+      };
     });
     renderActive();
   });

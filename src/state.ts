@@ -45,7 +45,7 @@ function migrate(raw: unknown): AppState {
   if (!parsed || parsed.version !== STATE_VERSION || !parsed.settings) {
     return createDefaultState();
   }
-  // 旧形式(走者数が全グループ共通の runnerCount)をグループごとの runnerCounts へ移行。
+  // 旧形式(人数が全グループ共通の runnerCount)をグループごとの runnerCounts へ移行。
   const s = parsed.settings;
   if (!Array.isArray(s.runnerCounts)) {
     const n = Array.isArray(s.groups) ? s.groups.length : 4;
@@ -54,6 +54,10 @@ function migrate(raw: unknown): AppState {
   }
   delete s.runnerCount;
   if (typeof s.handicap !== "boolean") s.handicap = true;
+  // 説明スライドのステップを後から追加した。旧状態には無いので補う。
+  const proj = parsed.projection as Record<string, unknown> | undefined;
+  if (proj && typeof proj.howtoStep !== "number") proj.howtoStep = 0;
+  if (proj && typeof proj.zoomLevel !== "number") proj.zoomLevel = 1;
   return parsed as AppState;
 }
 
