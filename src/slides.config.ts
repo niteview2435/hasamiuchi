@@ -125,7 +125,7 @@ export const CANVAS = { w: 1600, h: 900 };
 export const KICKER: Txt = { text: "ルール説明", x: 90, y: 86, size: 38, color: "accent", weight: 900 };
 
 /** タイトルの既定位置。 */
-export const DEFAULT_TITLE = { x: 90, y: 210, size: 70, weight: 900 as const, color: "ink" as const };
+export const DEFAULT_TITLE = { x: 90, y: 240, size: 70, weight: 900 as const, color: "ink" as const };
 /** 本文の既定位置。 */
 export const DEFAULT_BODY = { x: 90, y: 330, gap: 90, size: 50, weight: 700 as const, color: "ink" as const };
 /** お題表示の既定位置。 */
@@ -181,7 +181,7 @@ export const EXAMPLE = {
 export const COVER: { elements: El[] } = {
   elements: [
     { kind: "text", text: "チーム対抗・数字当て", x: 120, y: 300, size: 46, color: "muted", weight: 700 },
-    { kind: "text", text: "ハサミウチ", x: 115, y: 560, size: 240, weight: 900 },
+    { kind: "text", text: "ハサミウチ", x: 115, y: 540, size: 190, weight: 900 },
     { kind: "text", text: "― 刻むか、跳ぶか ―", x: 130, y: 680, size: 72, color: "accent", weight: 900 },
   ],
 };
@@ -219,7 +219,7 @@ export const SLIDES: Slide[] = [
   {
     name: "2人目",
     group: "1人ずつ数字を出す",
-    title: { text: "2人目" },
+    title: { text: "２人目" },
     body: { x: 90, y: 420, lines: ["前の人より大きい数字を出す。"] },
     question: { x: 90, y: 700, size: 43 },
     numbers: { show: 2 },
@@ -228,7 +228,7 @@ export const SLIDES: Slide[] = [
   {
     name: "3人目",
     group: "1人ずつ数字を出す",
-    title: { text: "3人目" },
+    title: { text: "３人目" },
     body: { x: 90, y: 420, lines: ["前の人より大きい数字を出す。"] },
     question: { x: 90, y: 700, size: 43 },
     numbers: { show: 3 },
@@ -237,7 +237,7 @@ export const SLIDES: Slide[] = [
   {
     name: "4人目",
     group: "1人ずつ数字を出す",
-    title: { text: "4人目" },
+    title: { text: "４人目" },
     body: { x: 90, y: 420, lines: ["前の人より大きい数字を出す。"] },
     question: { x: 90, y: 700, size: 43 },
     numbers: { show: 4 },
@@ -246,7 +246,7 @@ export const SLIDES: Slide[] = [
   {
     name: "5人目",
     group: "1人ずつ数字を出す",
-    title: { text: "5人目" },
+    title: { text: "５人目" },
     body: { x: 90, y: 420, lines: ["前の人より大きい数字を出す。"] },
     question: { x: 90, y: 700, size: 43 },
     numbers: { show: 5 },
@@ -255,7 +255,7 @@ export const SLIDES: Slide[] = [
   {
     name: "6人目(最後)",
     group: "1人ずつ数字を出す",
-    title: { text: "6人目(最後)" },
+    title: { text: "６人目(最後)" },
     body: { x: 90, y: 420, lines: ["最後の人。", "これで数字がそろった!"] },
     question: { x: 90, y: 700, size: 43 },
     numbers: { show: 6 },
@@ -271,16 +271,16 @@ export const SLIDES: Slide[] = [
   {
     name: "せまく挟むほど高得点",
     title: { text: "せまくはさむほど高得点" },
-    body: { x: 90, y: 330, lines: ["はさんだ幅がせまいほど、点は高い。", "大きく開いていると、低くなる。"] },
+    body: { x: 90, y: 450, lines: ["はさんだ幅がせまいほど点は高い。", "大きく開いていると、低くなる。"] },
     extras: [
       // せまい
-      { kind: "rect", x: 990, y: 360, w: 120, h: 80, fill: "band" },
-      { kind: "vline", x: 1050, y1: 360, y2: 440 },
-      { kind: "hline", x1: 990, x2: 1110, y: 360, style: "number" },
-      { kind: "hline", x1: 990, x2: 1110, y: 440, style: "number" },
-      { kind: "hline", x1: 966, x2: 1134, y: 400, style: "answer" },
-      { kind: "text", text: "せまい", x: 1050, y: 540, size: 46, align: "middle", color: "accent", weight: 900 },
-      { kind: "text", text: "高得点", x: 1050, y: 596, size: 32, align: "middle", color: "muted" },
+      { kind: "rect", x: 1040, y: 360, w: 120, h: 80, fill: "band" },
+      { kind: "vline", x: 1100, y1: 360, y2: 440 },
+      { kind: "hline", x1: 1040, x2: 1160, y: 360, style: "number" },
+      { kind: "hline", x1: 1040, x2: 1160, y: 440, style: "number" },
+      { kind: "hline", x1: 1016, x2: 1184, y: 400, style: "answer" },
+      { kind: "text", text: "せまい", x: 1100, y: 620, size: 46, align: "middle", color: "accent", weight: 900 },
+      { kind: "text", text: "高得点", x: 1100, y: 682, size: 32, align: "middle", color: "muted" },
       // ひろい
       { kind: "rect", x: 1340, y: 250, w: 120, h: 300, fill: "band" },
       { kind: "vline", x: 1400, y1: 250, y2: 550 },
@@ -288,14 +288,14 @@ export const SLIDES: Slide[] = [
       { kind: "hline", x1: 1340, x2: 1460, y: 550, style: "number" },
       { kind: "hline", x1: 1316, x2: 1484, y: 400, style: "answer" },
       { kind: "text", text: "ひろい", x: 1400, y: 620, size: 40, align: "middle", weight: 900 },
-      { kind: "text", text: "低い", x: 1400, y: 672, size: 32, align: "middle", color: "muted" },
+      { kind: "text", text: "低得点", x: 1400, y: 682, size: 32, align: "middle", color: "muted" },
     ],
   },
   // 9 はさめた/外れ -------------------------------------------------------
   {
     name: "はさめないと0点",
-    title: { text: "はさめないと0点" },
-    body: { x: 90, y: 330, lines: ["2つの数字の間に正解が", "入っていれば点になる。", "でも全部が下や上だと0点。"] },
+    title: { text: "はさめないと０点" },
+    body: { x: 90, y: 440, lines: ["2つの数字の間に正解が", "入っていれば点になる。", "でも全部が下や上だと0点。"] },
     extras: [
       // とどかない(全部、正解線より下)
       { kind: "text", text: "0点", x: 1000, y: 300, size: 44, align: "middle", color: "accent", weight: 900 },
@@ -304,15 +304,15 @@ export const SLIDES: Slide[] = [
       { kind: "hline", x1: 940, x2: 1060, y: 440, style: "number" },
       { kind: "hline", x1: 940, x2: 1060, y: 510, style: "number" },
       { kind: "hline", x1: 940, x2: 1060, y: 580, style: "number" },
-      { kind: "text", text: "とどかない", x: 1000, y: 650, size: 30, align: "middle", color: "muted" },
+      { kind: "text", text: "とどかない", x: 1000, y: 690, size: 30, align: "middle", color: "muted" },
       // はさめた(中央)
       { kind: "rect", x: 1140, y: 320, w: 120, h: 120, fill: "band" },
       { kind: "vline", x: 1200, y1: 320, y2: 440 },
       { kind: "hline", x1: 1140, x2: 1260, y: 320, style: "number" },
       { kind: "hline", x1: 1140, x2: 1260, y: 440, style: "number" },
       { kind: "hline", x1: 1116, x2: 1284, y: 380, style: "answer" },
-      { kind: "text", text: "はさめた", x: 1200, y: 540, size: 40, align: "middle", color: "accent", weight: 900 },
-      { kind: "text", text: "点が入る", x: 1200, y: 592, size: 30, align: "middle", color: "muted" },
+      { kind: "text", text: "はさめた", x: 1200, y: 610, size: 40, align: "middle", color: "accent", weight: 900 },
+      { kind: "text", text: "点が入る", x: 1200, y: 690, size: 30, align: "middle", color: "muted" },
       // とびこえ(全部、正解線より上)
       { kind: "vline", x: 1400, y1: 180, y2: 320 },
       { kind: "hline", x1: 1340, x2: 1460, y: 180, style: "number" },
@@ -320,23 +320,72 @@ export const SLIDES: Slide[] = [
       { kind: "hline", x1: 1340, x2: 1460, y: 320, style: "number" },
       { kind: "hline", x1: 1320, x2: 1480, y: 380, style: "answer" },
       { kind: "text", text: "0点", x: 1400, y: 440, size: 44, align: "middle", color: "accent", weight: 900 },
-      { kind: "text", text: "とびこえ", x: 1400, y: 650, size: 30, align: "middle", color: "muted" },
+      { kind: "text", text: "とびこえ", x: 1400, y: 690, size: 30, align: "middle", color: "muted" },
     ],
   },
   // 10 ピタリ賞 -----------------------------------------------------------
   {
     name: "ピタリ賞",
     title: { text: "ピタリ賞" },
-    body: { x: 90, y: 330, lines: ["正解ピッタリの数字を", "出せた人がいれば、", "ボーナス点!"] },
+    body: { x: 90, y: 440, lines: ["正解ピッタリの数字を", "出せた人がいれば、", "ボーナス点！"] },
     extras: [
-      { kind: "hline", x1: 950, x2: 1450, y: 380, style: "answer" },
-      { kind: "text", text: "正解 200,000人", x: 950, y: 350, size: 38, color: "accent", weight: 900 },
-      { kind: "person", x: 1200, y: 200, size: 130, active: true },
-      { kind: "hline", x1: 1110, x2: 1290, y: 380, style: "active" },
-      { kind: "badge", x: 1090, y: 440, w: 220, h: 80, text: "ピタリ賞!", size: 44 },
+      { kind: "hline", x1: 905, x2: 1405, y: 490, style: "answer" },
+      { kind: "text", text: "正解", x: 905, y: 460, size: 38, color: "accent", weight: 900 },
+      { kind: "person", x: 1155, y: 270, size: 130, active: true },
+      { kind: "hline", x1: 1065, x2: 1245, y: 490, style: "active" },
+      { kind: "badge", x: 1030, y: 650, w: 250, h: 100, text: "ピタリ賞！", size: 44 },
     ],
   },
-  // 11 まとめ -------------------------------------------------------------
+  // 11 相談のルール -------------------------------------------------------
+  {
+    name: "相談のルール",
+    title: { text: "相談してOK" },
+    body: {
+      x: 90,
+      y: 440,
+      lines: ["チーム内で相談しながら", "数字を決めてOK。", "ただし話すのは「作戦」だけ。"],
+    },
+    extras: [
+      // 相談する2人(赤い帯の中央 x=1190 にそろえる)
+      { kind: "person", x: 1120, y: 150, size: 130 },
+      { kind: "person", x: 1260, y: 150, size: 130 },
+      { kind: "text", text: "チームで相談", x: 1190, y: 350, size: 40, align: "middle", color: "muted" },
+      // ○ 作戦の相談はOK
+      { kind: "text", text: "○ 作戦の相談はOK", x: 900, y: 430, size: 42, color: "accent", weight: 900 },
+      { kind: "rect", x: 900, y: 455, w: 580, h: 85, fill: "band" },
+      { kind: "text", text: "「刻む? 跳ぶ?」", x: 925, y: 512, size: 36, weight: 700 },
+      // × 数字そのものはナシ
+      { kind: "text", text: "× 数字そのものはナシ", x: 900, y: 650, size: 42, color: "muted", weight: 900 },
+      { kind: "rect", x: 900, y: 675, w: 580, h: 85, fill: "none", stroke: true },
+      { kind: "text", text: "「190,000にしよう」", x: 925, y: 732, size: 36, color: "muted", weight: 700 },
+    ],
+  },
+  // 12 単位に注意 ---------------------------------------------------------
+  {
+    name: "単位に注意",
+    title: { text: "単位に注意" },
+    body: {
+      x: 90,
+      y: 440,
+      lines: ["答えは「回答単位」の", "きざみで書く。"],
+    },
+    extras: [
+      // お題の「回答単位」カードと、のぞき込む人
+      { kind: "person", x: 860, y: 175, size: 110, active: true },
+      { kind: "rect", x: 970, y: 150, w: 440, h: 150, fill: "none", stroke: true },
+      { kind: "text", text: "回答単位", x: 995, y: 205, size: 32, color: "accent", weight: 900 },
+      { kind: "text", text: "10 店", x: 1190, y: 268, size: 64, align: "middle", weight: 900 },
+      // ○ 10店きざみ
+      { kind: "text", text: "○ 10店ずつで答える", x: 810, y: 440, size: 42, color: "accent", weight: 900 },
+      { kind: "rect", x: 810, y: 465, w: 600, h: 85, fill: "band" },
+      { kind: "text", text: "20店・30店・1,900店", x: 835, y: 522, size: 40, weight: 700 },
+      // × 中途半端な数はダメ
+      { kind: "text", text: "× 中途半端な数はダメ", x: 810, y: 650, size: 42, color: "muted", weight: 900 },
+      { kind: "rect", x: 810, y: 675, w: 600, h: 85, fill: "none", stroke: true },
+      { kind: "text", text: "21店・195店 はナシ", x: 835, y: 732, size: 40, color: "muted", weight: 700 },
+    ],
+  },
+  // 13 まとめ -------------------------------------------------------------
   {
     name: "まとめ",
     title: { text: "刻むか、跳ぶか。" },
