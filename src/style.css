@@ -392,6 +392,14 @@ select:focus {
   font-variant-numeric: tabular-nums;
 }
 
+/* 説明タブのナビ行:戻る/次へ は左に隣同士で固定し、ステータス文は
+   右へ逃がす(文の長さが変わってもボタンは動かない)。←/→ でも送れる。 */
+.howto-nav-status {
+  margin-top: 0;
+  margin-left: auto;
+  align-self: center;
+}
+
 /* 入力グリッド */
 .grid-scroll {
   overflow-x: auto;

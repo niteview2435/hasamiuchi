@@ -142,7 +142,7 @@ function renderHowtoTab(state: AppState): string {
   const page = howtoPageOf(step);
   const list = HOWTO_PAGE_TITLES.map(
     (t, i) =>
-      `<li class="${onHowto && i === page ? "is-current" : ""}"><button data-howto-go="${howtoPageStart(i)}">${i + 1}. ${esc(t)}</button></li>`,
+      `<li class="${onHowto && i === page ? "is-current" : ""}"><button data-howto-go="${howtoPageStart(i)}">${esc(t)}</button></li>`,
   ).join("");
 
   return `
@@ -156,8 +156,8 @@ function renderHowtoTab(state: AppState): string {
       </div>
       <div class="btn-row">
         <button data-howto-prev>◀ 戻る</button>
-        <span class="status">${onHowto ? `ステップ ${page + 1} / ${HOWTO_PAGE_COUNT}(${esc(HOWTO_PAGE_TITLES[page] ?? "")})${howtoPaused ? " ・停止中" : ""}` : "投影外"}</span>
         <button data-howto-next class="primary">次へ ▶</button>
+        <span class="status howto-nav-status">${onHowto ? `ステップ ${page + 1} / ${HOWTO_PAGE_COUNT}(${esc(HOWTO_PAGE_TITLES[page] ?? "")})${howtoPaused ? " ・停止中" : ""}` : "投影外"}</span>
       </div>
     </section>
 
@@ -853,6 +853,17 @@ export function mountControl(root: HTMLElement): void {
     const ok = importStateJson(await file.text());
     if (!ok) alert("インポートに失敗しました。ファイルを確認してください。");
     renderActive();
+  });
+
+  // 説明タブでは ←/→ キーで戻る/次へ(ボタンを押さなくても送れる)。
+  // 入力欄にフォーカスがあるときは邪魔しない。
+  window.addEventListener("keydown", (e) => {
+    if (activeTab !== "howto" || e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    const t = e.target as HTMLElement | null;
+    if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    e.preventDefault();
+    const sel = e.key === "ArrowRight" ? "[data-howto-next]" : "[data-howto-prev]";
+    main.querySelector<HTMLButtonElement>(sel)?.click();
   });
 
   renderActive();
