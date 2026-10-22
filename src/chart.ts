@@ -31,7 +31,7 @@ export interface ChartOptions {
   answerDrop?: boolean;
 }
 
-const MARGIN = { top: 24, right: 24, bottom: 80, left: 92 };
+const MARGIN = { top: 24, right: 24, bottom: 104, left: 92 };
 
 function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
@@ -82,6 +82,8 @@ export function buildLadderChart(o: ChartOptions): string {
 
   const n = Math.max(groups.length, 1);
   const colW = plotW / n;
+  // グループ名は列幅(=バンド数)に応じて拡大。少人数チームほど大きく。
+  const nameSize = Math.round(Math.max(26, Math.min(56, colW * 0.17)));
   const colCenter = (i: number): number => plotLeft + colW * (i + 0.5);
 
   const parts: string[] = [];
@@ -146,18 +148,19 @@ export function buildLadderChart(o: ChartOptions): string {
 
     parts.push(`</g>`); // クリップ領域ここまで
 
+    // グループ名(バンド数に応じて拡大)。プロット下に名前→得点の順。
+    const nameY = plotTop + plotH + nameSize;
+    parts.push(
+      `<text class="group-name" x="${cx}" y="${nameY}" text-anchor="middle" style="font-size:${nameSize}px">${esc(g.name)}</text>`,
+    );
+
     // 得点のラベル(正解表示後)。比は出さず得点だけ。
     if (showAnswer && g.score != null) {
       const cls = g.outside ? "score-label is-zero" : "score-label";
       parts.push(
-        `<text class="${cls}" x="${cx}" y="${plotTop + plotH + 48}" text-anchor="middle">${formatScore(g.score)}点</text>`,
+        `<text class="${cls}" x="${cx}" y="${nameY + 34}" text-anchor="middle">${formatScore(g.score)}点</text>`,
       );
     }
-
-    // グループ名
-    parts.push(
-      `<text class="group-name" x="${cx}" y="${plotTop + plotH + 22}" text-anchor="middle">${esc(g.name)}</text>`,
-    );
     parts.push("</g>");
   });
 

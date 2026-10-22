@@ -493,41 +493,40 @@ body.view-projection #app {
   padding: 2vmin;
 }
 
-.proj-question .round-no {
+/* お題スライド(中身・座標は slides.config.ts の QUESTION)。
+   howto と同じキャンバスに載せ、各要素は foreignObject で座標配置する。 */
+.proj-question {
+  justify-content: center;
+  padding: 1.5vmin 2vmin;
+}
+/* 座標に置くテキストブロック(見出しフォント。幅 w で折り返す)。
+   px 値はキャンバス座標なので SVG と一緒に拡大縮小する。 */
+.q-fo {
   font-family: var(--font-display);
-  font-size: 4vmin;
+  line-height: 1.12;
+}
+/* 回答単位ボックス(中身に合わせて縮む・四角囲み)。 */
+.q-unit-box {
+  display: inline-block;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.q-unit-box.is-boxed {
+  border: 5px solid var(--ink);
+  border-radius: 12px;
+  padding: 12px 28px;
+}
+.q-unit-label {
+  font-family: var(--font-display);
+  font-weight: 900;
   color: var(--accent);
-  margin: 0 0 2vmin;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  margin-right: 16px;
 }
-.q-title {
+.q-unit-val {
   font-family: var(--font-display);
-  font-size: 11vmin;
-  line-height: 1.05;
-  margin: 0;
   font-weight: 900;
-}
-.q-hint {
-  font-size: 4.5vmin;
-  margin: 3vmin 0 0;
-}
-.q-unit {
-  font-size: 3.5vmin;
-  color: var(--muted);
-  margin: 2vmin 0 0;
-}
-.awaiting {
-  font-size: 6vmin;
-  color: var(--muted);
-}
-.proj-timer {
-  margin-top: 4vmin;
   font-variant-numeric: tabular-nums;
-}
-.proj-timer .clock {
-  font-family: var(--font-display);
-  font-size: 14vmin;
-  font-weight: 900;
 }
 
 .proj-reveal {
@@ -536,8 +535,8 @@ body.view-projection #app {
 }
 .proj-reveal .round-no {
   font-family: var(--font-display);
-  font-size: 2.4vmin;
-  margin: 0 0 0.4vmin;
+  font-size: 3.4vmin;
+  margin: 1.6vmin 0 0.6vmin;
   color: var(--accent);
 }
 .chart-wrap {
@@ -666,7 +665,11 @@ body.view-projection #app {
 .ladder-chart .score-label.is-zero {
   fill: var(--muted);
 }
-.ladder-chart .ladder-group.is-dim {
+/* 外れ(0点)のグループははしごだけ灰色に(グループ名・点数は薄くしない)。 */
+.ladder-chart .ladder-group.is-dim .band,
+.ladder-chart .ladder-group.is-dim .rail,
+.ladder-chart .ladder-group.is-dim .rung,
+.ladder-chart .ladder-group.is-dim .rung-label {
   opacity: 0.32;
 }
 .ladder-chart .answer-line line {
@@ -740,9 +743,21 @@ body.view-projection #app {
 .howto-math {
   line-height: 1.1;
   white-space: nowrap;
+  opacity: 0.68; /* KaTeX の黒が濃いので少し薄くする */
 }
 .howto-math .katex {
   font-size: 1em; /* 外側 div の font-size(= SVG 座標)基準にする */
+}
+
+/* 日本語＋インライン数式の一行。地の文は見出しフォント、$...$ は KaTeX。 */
+.howto-rich {
+  font-family: var(--font-display);
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0.86;
+}
+.howto-rich .katex {
+  font-size: 1.02em;
 }
 
 /* 人のアイコン */
