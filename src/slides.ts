@@ -361,7 +361,6 @@ function qBlock(
 export function buildQuestionSlide(args: {
   roundNo: number;
   question: { title: string; hint: string; unit: string; unitLabel: string } | null;
-  clock: string | null;
 }): string {
   const Q = QUESTION;
   const parts: string[] = [];
@@ -386,22 +385,6 @@ export function buildQuestionSlide(args: {
     parts.push(
       `<foreignObject x="${Q.unit.x}" y="${Q.unit.y}" width="${CANVAS.w - Q.unit.x}" height="${Q.unit.size * 3}" class="howto-fo">` +
         `<div xmlns="http://www.w3.org/1999/xhtml">${box}</div></foreignObject>`,
-    );
-  }
-
-  if (args.clock != null) {
-    // 時計は projection 側の interval が [data-timer] .clock を毎秒書き換える。
-    parts.push(
-      qBlock(
-        Q.timer.x,
-        Q.timer.y,
-        CANVAS.w - Q.timer.x,
-        Q.timer.size,
-        Q.timer.color,
-        900,
-        `<span class="clock">${esc(args.clock)}</span>`,
-        ' data-timer',
-      ),
     );
   }
 

@@ -123,7 +123,6 @@ function renderSettings(state: AppState): string {
         <input type="number" min="0" step="1" data-c value="${s.c}" /></label>
       <label class="field"><span>ピタリ賞</span>
         <input type="number" min="0" step="1" data-pitari value="${s.pitariBonus}" /></label>
-      <label class="field field-check"><input type="checkbox" data-timer-enabled ${s.timerEnabled ? "checked" : ""} /><span>お題画面にタイマーを表示</span></label>
       <label class="field field-check"><input type="checkbox" data-handicap ${s.handicap ? "checked" : ""} /><span>人数ハンデ(人数差を補正。同数なら無影響)</span></label>
     </section>
 
@@ -187,18 +186,6 @@ function renderQuestionTab(state: AppState): string {
        </dl>`
     : `<p class="muted">お題を選んでください。</p>`;
 
-  const timer = state.settings.timerEnabled
-    ? `<section class="panel">
-         <h2>タイマー</h2>
-         <label class="field"><span>秒数</span><input type="number" min="0" data-timer-sec value="${state.timer.durationSec}" /></label>
-         <div class="btn-row">
-           <button data-timer-start>開始 / 再開</button>
-           <button data-timer-pause>一時停止</button>
-           <button data-timer-reset class="ghost">リセット</button>
-         </div>
-       </section>`
-    : "";
-
   return `
     <section class="panel">
       <h2>第 ${state.currentRound + 1} ラウンドのお題</h2>
@@ -212,8 +199,7 @@ function renderQuestionTab(state: AppState): string {
         <button data-show-question class="primary">投影にお題を表示</button>
         <button data-blank class="ghost">投影をブランクに</button>
       </div>
-    </section>
-    ${timer}`;
+    </section>`;
 }
 
 function renderInput(state: AppState): string {
@@ -516,9 +502,6 @@ export function mountControl(root: HTMLElement): void {
       });
     num("[data-c]", (s, v) => (s.settings.c = v));
     num("[data-pitari]", (s, v) => (s.settings.pitariBonus = v));
-    main.querySelector<HTMLInputElement>("[data-timer-enabled]")?.addEventListener("change", (e) => {
-      update((s) => (s.settings.timerEnabled = (e.target as HTMLInputElement).checked));
-    });
     main.querySelector<HTMLInputElement>("[data-handicap]")?.addEventListener("change", (e) => {
       update((s) => (s.settings.handicap = (e.target as HTMLInputElement).checked));
     });
@@ -608,32 +591,6 @@ export function mountControl(root: HTMLElement): void {
     main.querySelector("[data-blank]")?.addEventListener("click", () => {
       update((s) => (s.projection.screen = "blank"));
       refreshChrome();
-    });
-    main.querySelector("[data-timer-start]")?.addEventListener("click", () => {
-      const sec = Number(main.querySelector<HTMLInputElement>("[data-timer-sec]")?.value) || 0;
-      update((s) => {
-        if (s.timer.pausedRemainingMs != null) {
-          s.timer.endsAt = Date.now() + s.timer.pausedRemainingMs;
-          s.timer.pausedRemainingMs = null;
-        } else {
-          s.timer.durationSec = sec;
-          s.timer.endsAt = Date.now() + sec * 1000;
-        }
-      });
-    });
-    main.querySelector("[data-timer-pause]")?.addEventListener("click", () => {
-      update((s) => {
-        if (s.timer.endsAt != null) {
-          s.timer.pausedRemainingMs = Math.max(0, s.timer.endsAt - Date.now());
-          s.timer.endsAt = null;
-        }
-      });
-    });
-    main.querySelector("[data-timer-reset]")?.addEventListener("click", () => {
-      update((s) => {
-        s.timer.endsAt = null;
-        s.timer.pausedRemainingMs = null;
-      });
     });
   }
 

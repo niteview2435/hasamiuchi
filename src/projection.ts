@@ -5,22 +5,9 @@ import { buildLadderChart, type ChartGroup } from "./chart";
 import { formatNumber, formatScore } from "./format";
 import { buildCoverSlide, buildHowtoSlide, buildQuestionSlide } from "./slides";
 import { computeRoundResults, cumulativeTotals, type GroupResult } from "./results";
-import { getState, subscribe } from "./state";
-import type { AppState, TimerState } from "./types";
+import { subscribe } from "./state";
+import type { AppState } from "./types";
 import { roundQuestion } from "./types";
-
-function timerRemainingMs(t: TimerState): number {
-  if (t.endsAt != null) return Math.max(0, t.endsAt - Date.now());
-  if (t.pausedRemainingMs != null) return t.pausedRemainingMs;
-  return t.durationSec * 1000;
-}
-
-function formatClock(ms: number): string {
-  const total = Math.ceil(ms / 1000);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function toChartGroup(r: GroupResult): ChartGroup {
   const base: ChartGroup = {
@@ -89,13 +76,11 @@ function renderBlank(): string {
 function renderQuestion(state: AppState): string {
   const round = state.rounds[state.currentRound];
   const q = round ? roundQuestion(state, round) : null;
-  const clock = state.settings.timerEnabled ? formatClock(timerRemainingMs(state.timer)) : null;
   return buildQuestionSlide({
     roundNo: state.currentRound + 1,
     question: q
       ? { title: q.title, hint: q.hint, unit: formatNumber(q.unit), unitLabel: q.unitLabel }
       : null,
-    clock,
   });
 }
 
@@ -241,7 +226,6 @@ function renderRanking(state: AppState): string {
 }
 
 export function mountProjection(root: HTMLElement): void {
-  let timerInterval: number | null = null;
   let zoomRaf = 0;
   let zoomCurrent = 1; // 現在の表示倍率(アニメーションで補間)
 
@@ -306,18 +290,6 @@ export function mountProjection(root: HTMLElement): void {
       // reveal を離れたらズームを解除しておく。
       cancelAnimationFrame(zoomRaf);
       zoomCurrent = 1;
-    }
-
-    // タイマーは投影側で毎秒進める(状態は開始時刻だけ共有する)。
-    if (timerInterval != null) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-    const timerEl = root.querySelector<HTMLElement>("[data-timer] .clock");
-    if (timerEl) {
-      timerInterval = window.setInterval(() => {
-        timerEl.textContent = formatClock(timerRemainingMs(getState().timer));
-      }, 250);
     }
   };
 
