@@ -226,7 +226,7 @@ function renderInput(state: AppState): string {
   return `
     <section class="panel">
       <h2>数字の入力(第 ${state.currentRound + 1} ラウンド)</h2>
-      <p class="muted">単位 ${formatNumber(unit)} ${esc(q?.unitLabel ?? "")} の倍数 / 前の人より大きい。違反は<span class="warn-chip">黄色</span>で警告しますが、確定は司会の判断で可能です。Enter で次のセルへ。投影には数字を出しません。</p>
+      <p class="muted">単位 ${formatNumber(unit)} ${esc(q?.unitLabel ?? "")} の倍数 / 前の人より大きい。違反は<span class="warn-chip">黄色</span>で警告しますが、確定は司会の判断で可能です。Enter で次のセルへ。<strong>表計算(行=グループ・列=人目)からコピーし、左上のセルに貼り付けると一括入力できます。</strong>投影には数字を出しません。</p>
       <div class="grid-scroll">
         <table class="input-grid">
           <thead><tr><th>グループ</th>${headerCells}</tr></thead>
@@ -640,6 +640,38 @@ export function mountControl(root: HTMLElement): void {
           const idx = cells.indexOf(input);
           cells[idx + 1]?.focus();
         }
+      });
+      // 表計算からの一括ペースト。このセルを起点に、タブ=横/改行=縦で流し込む。
+      input.addEventListener("paste", (e) => {
+        const text = e.clipboardData?.getData("text/plain") ?? "";
+        if (!/[\t\n\r]/.test(text)) return; // 単一セルは通常ペーストに任せる
+        e.preventDefault();
+        const startGi = Number(input.dataset.gi);
+        const startRi = Number(input.dataset.ri);
+        const grid = text
+          .replace(/\r\n?/g, "\n")
+          .replace(/\n+$/, "")
+          .split("\n")
+          .map((line) => line.split("\t"));
+        update((s) => {
+          const r = s.rounds[s.currentRound];
+          if (!r) return;
+          const counts = s.settings.runnerCounts;
+          grid.forEach((row, dr) => {
+            const gi = startGi + dr;
+            const ladder = r.ladders[gi];
+            if (!ladder) return; // グループ数を超えたら無視
+            row.forEach((cellText, dc) => {
+              const ri = startRi + dc;
+              if (ri >= (counts[gi] ?? 0)) return; // 人数を超えたら無視
+              const raw = cellText.replace(/[,\s]/g, ""); // 桁区切り・空白を除去
+              if (raw === "") return; // 空欄は既存値を保持
+              const v = Number(raw);
+              if (Number.isFinite(v)) ladder[ri] = v;
+            });
+          });
+        });
+        renderActive(); // 値と警告を描き直す
       });
     });
     main.querySelector("[data-clear-round]")?.addEventListener("click", () => {
