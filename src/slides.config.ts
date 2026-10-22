@@ -53,7 +53,10 @@ export type El =
   // 四角。fill="band"(朱の薄い帯)/ "accent"(朱ベタ)/ "none"。
   | { kind: "rect"; x: number; y: number; w: number; h: number; fill?: "band" | "accent" | "none"; stroke?: boolean }
   // 朱のバッジ(四角＋白抜き文字)。
-  | { kind: "badge"; x: number; y: number; w: number; h: number; text: string; size: number };
+  | { kind: "badge"; x: number; y: number; w: number; h: number; text: string; size: number }
+  // LaTeX 数式(KaTeX で組版)。x=左, y=上(ベースラインではない), size=本文の高さ目安。
+  // color で色を変えられる。tex には LaTeX をそのまま書く(例: "r = \\frac{x_{k+1}}{x_k}")。
+  | { kind: "math"; x: number; y: number; size: number; tex: string; color?: Color };
 
 // ---- 1 スライドの形 --------------------------------------------------------
 
@@ -298,8 +301,8 @@ export const SLIDES: Slide[] = [
     body: { x: 90, y: 440, lines: ["2つの数字の間に正解が", "入っていれば点になる。", "でも全部が下や上だと0点。"] },
     extras: [
       // とどかない(全部、正解線より下)
-      { kind: "text", text: "0点", x: 1000, y: 300, size: 44, align: "middle", color: "accent", weight: 900 },
-      { kind: "hline", x1: 920, x2: 1080, y: 360, style: "answer" },
+      { kind: "text", text: "0点", x: 1000, y: 330, size: 44, align: "middle", color: "accent", weight: 900 },
+      { kind: "hline", x1: 920, x2: 1080, y: 380, style: "answer" },
       { kind: "vline", x: 1000, y1: 440, y2: 580 },
       { kind: "hline", x1: 940, x2: 1060, y: 440, style: "number" },
       { kind: "hline", x1: 940, x2: 1060, y: 510, style: "number" },
@@ -391,5 +394,56 @@ export const SLIDES: Slide[] = [
     title: { text: "刻むか、跳ぶか。" },
     body: { x: 90, y: 330, lines: ["安全にきざむ?", "それとも思いきって跳ぶ?", "チームの作戦しだい。", "さあ、はじめよう。"] },
     numbers: { show: 6, answer: true },
+  },
+  // 14 補足:得点の詳細(写真用の細かいページ。数式は LaTeX=KaTeX)--------
+  {
+    name: "補足:得点の詳細",
+    title: { text: "補足:得点のくわしい計算", x: 90, y: 150, size: 50 },
+    body: { lines: [] },
+    extras: [
+      { kind: "text", text: "写真OK。細かく知りたい人向け。", x: 90, y: 200, size: 26, color: "muted" },
+      { kind: "vline", x: 812, y1: 250, y2: 835 },
+
+      // ---- 左列 ----
+      { kind: "text", text: "記号", x: 90, y: 262, size: 30, color: "accent", weight: 900 },
+      { kind: "text", text: "出した数字(昇順)。正解 a、得点係数 c(既定 20)", x: 90, y: 298, size: 24, color: "muted" },
+      { kind: "math", x: 90, y: 312, size: 32, tex: "x_1 < x_2 < \\cdots < x_m" },
+
+      { kind: "text", text: "挟んだ比 r", x: 90, y: 400, size: 30, color: "accent", weight: 900 },
+      { kind: "math", x: 90, y: 420, size: 34, tex: "x_k < a < x_{k+1} \\ \\Rightarrow\\ r = \\dfrac{x_{k+1}}{x_k}" },
+
+      { kind: "text", text: "素点 S", x: 90, y: 548, size: 30, color: "accent", weight: 900 },
+      { kind: "math", x: 90, y: 568, size: 31, tex: "S = \\max\\!\\bigl(1,\\ 30 - c\\log_2 r\\bigr)" },
+      { kind: "text", text: "外れ(a<x₁ / a>xₘ)= 0 点、 一致(xₖ=a)= 30 点", x: 90, y: 640, size: 23, color: "muted" },
+      { kind: "text", text: "挟めれば計算上0以下でも最低1点を保証", x: 90, y: 672, size: 23, color: "muted" },
+
+      { kind: "text", text: "人数ハンデ(既定ON)", x: 90, y: 724, size: 30, color: "accent", weight: 900 },
+      { kind: "math", x: 90, y: 744, size: 28, tex: "p = \\dfrac{m_i - 1}{m_{\\max} - 1}" },
+      { kind: "math", x: 420, y: 756, size: 28, tex: "S = \\max\\!\\bigl(1,\\ 30 - c\\,p\\log_2 r\\bigr)" },
+      { kind: "text", text: "同数なら p=1 で無影響。満点一致・ピタリには不適用。", x: 90, y: 835, size: 22, color: "muted" },
+
+      // ---- 右列 ----
+      { kind: "text", text: "ピタリ賞", x: 850, y: 262, size: 30, color: "accent", weight: 900 },
+      { kind: "text", text: "正解を回答単位 u に丸めた値に一致した人がいれば", x: 850, y: 298, size: 24, color: "muted" },
+      { kind: "math", x: 850, y: 314, size: 32, tex: "\\mathrm{round}\\!\\left(\\dfrac{a}{u}\\right)\\times u" },
+      { kind: "text", text: "と一致した人のチームに +20 点(既定)", x: 850, y: 398, size: 24, weight: 700 },
+      { kind: "text", text: "区間の位置とは独立に成立する。", x: 850, y: 432, size: 23, color: "muted" },
+
+      { kind: "text", text: "早見表(c = 20)", x: 850, y: 505, size: 30, color: "accent", weight: 900 },
+      { kind: "math", x: 860, y: 527, size: 26, tex: "S = 30 - 20\\log_2 r" },
+      { kind: "text", text: "比 r", x: 870, y: 610, size: 24, color: "muted" },
+      { kind: "text", text: "得点", x: 1110, y: 610, size: 24, color: "muted" },
+      { kind: "hline", x1: 860, x2: 1470, y: 623, style: "thin" },
+      { kind: "text", text: "1.00", x: 870, y: 660, size: 27, mono: true },
+      { kind: "text", text: "30(満点)", x: 1110, y: 660, size: 27 },
+      { kind: "text", text: "1.41", x: 870, y: 694, size: 27, mono: true },
+      { kind: "text", text: "20", x: 1110, y: 694, size: 27 },
+      { kind: "text", text: "2.00", x: 870, y: 728, size: 27, mono: true },
+      { kind: "text", text: "10", x: 1110, y: 728, size: 27 },
+      { kind: "text", text: "2.83", x: 870, y: 762, size: 27, mono: true },
+      { kind: "text", text: "1(最低)", x: 1110, y: 762, size: 27 },
+      { kind: "text", text: "4 以上", x: 870, y: 796, size: 27, mono: true },
+      { kind: "text", text: "1", x: 1110, y: 796, size: 27 },
+    ],
   },
 ];

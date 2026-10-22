@@ -733,6 +733,18 @@ body.view-projection #app {
   font-variant-numeric: tabular-nums;
 }
 
+/* 補足スライドの LaTeX 数式(KaTeX)。foreignObject は切り取らず見せる。 */
+.howto-canvas .howto-fo {
+  overflow: visible;
+}
+.howto-math {
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.howto-math .katex {
+  font-size: 1em; /* 外側 div の font-size(= SVG 座標)基準にする */
+}
+
 /* 人のアイコン */
 .howto-canvas .howto-person {
   fill: var(--ink);

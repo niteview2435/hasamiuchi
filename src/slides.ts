@@ -2,6 +2,7 @@
 // 中身(文字・座標・スライド)はすべて slides.config.ts にあり、ここはそれを
 // 1 枚のキャンバス(SVG)に描くだけ。見た目を変えるときは config を編集する。
 
+import katex from "katex";
 import { formatNumber } from "./format";
 import {
   AUTO_ADVANCE,
@@ -119,7 +120,29 @@ function element(el: El): string {
         `<g class="howto-badge"><rect x="${el.x}" y="${el.y}" width="${el.w}" height="${el.h}" rx="6" />` +
         `<text x="${el.x + el.w / 2}" y="${el.y + el.h * 0.64}" font-size="${el.size}" text-anchor="middle">${esc(el.text)}</text></g>`
       );
+    case "math":
+      return mathEl(el);
   }
+}
+
+const MATH_COLOR: Record<string, string> = {
+  ink: "var(--ink)",
+  accent: "var(--accent)",
+  muted: "var(--muted)",
+  paper: "var(--paper)",
+};
+
+/** LaTeX 数式を KaTeX で組み、SVG 内に foreignObject として置く。 */
+function mathEl(el: { x: number; y: number; size: number; tex: string; color?: string }): string {
+  const html = katex.renderToString(el.tex, { throwOnError: false, displayMode: false, output: "html" });
+  const color = MATH_COLOR[el.color ?? "ink"] ?? "var(--ink)";
+  const w = CANVAS.w - el.x; // 右端まで使える(はみ出しは overflow:visible で見せる)
+  const h = el.size * 2.6;
+  return (
+    `<foreignObject x="${el.x}" y="${el.y}" width="${w}" height="${h}" class="howto-fo">` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" class="howto-math" style="font-size:${el.size}px;color:${color}">${html}</div>` +
+    `</foreignObject>`
+  );
 }
 
 type LadderGeom = typeof LADDER;
