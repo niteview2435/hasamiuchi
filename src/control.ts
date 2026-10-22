@@ -148,7 +148,7 @@ function renderHowtoTab(state: AppState): string {
   return `
     <section class="panel">
       <h2>ルール説明スライド</h2>
-      <p class="muted">人のアイコンと具体例(富士山の登山者数)で、1人ずつ数字を出して正解をはさむ流れを見せます。「1人目」が出ると、そこから「最後の人」まで ${HOWTO_AUTO.sec} 秒ごとに自動で進み、最後まで行くと「1人目」に戻ってループします(間隔は slides.config.ts の AUTO_ADVANCE。「次へ」を押せば先へ進みます)。</p>
+      <p class="muted">人のアイコンと具体例(富士山の登山者数)で、1人ずつ数字を出して正解をはさむ流れを見せます。「1人目」が出ると、そこから「最後の人」まで ${HOWTO_AUTO.sec} 秒ごとに自動で進み、最後まで行くと「1人目」に戻ってループします。</p>
       <div class="btn-row">
         <button data-howto-open class="primary">投影に説明を表示</button>
         <button data-howto-playpause>${howtoPaused ? "▶ 再生" : "⏸ 停止"}</button>
