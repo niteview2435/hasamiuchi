@@ -3,7 +3,7 @@
 
 import { buildLadderChart, type ChartGroup } from "./chart";
 import { formatNumber, formatScore } from "./format";
-import { buildCoverSlide, buildHowtoSlide } from "./slides";
+import { buildCoverSlide, buildHowtoSlide, buildQuestionSlide } from "./slides";
 import { computeRoundResults, cumulativeTotals, type GroupResult } from "./results";
 import { getState, subscribe } from "./state";
 import type { AppState, TimerState } from "./types";
@@ -89,26 +89,14 @@ function renderBlank(): string {
 function renderQuestion(state: AppState): string {
   const round = state.rounds[state.currentRound];
   const q = round ? roundQuestion(state, round) : null;
-  const roundNo = state.currentRound + 1;
-  const timer = state.settings.timerEnabled
-    ? `<div class="proj-timer" data-timer><span class="clock">${formatClock(timerRemainingMs(state.timer))}</span></div>`
-    : "";
-  if (!q) {
-    return `
-      <div class="proj-slide proj-question">
-        <p class="round-no">第 ${roundNo} ラウンド</p>
-        <p class="awaiting">お題を準備中…</p>
-        ${timer}
-      </div>`;
-  }
-  return `
-    <div class="proj-slide proj-question">
-      <p class="round-no">第 ${roundNo} ラウンド</p>
-      <h1 class="q-title">${esc(q.title)}</h1>
-      <p class="q-hint">${esc(q.hint)}</p>
-      <p class="q-unit">回答単位:${formatNumber(q.unit)} ${esc(q.unitLabel)}</p>
-      ${timer}
-    </div>`;
+  const clock = state.settings.timerEnabled ? formatClock(timerRemainingMs(state.timer)) : null;
+  return buildQuestionSlide({
+    roundNo: state.currentRound + 1,
+    question: q
+      ? { title: q.title, hint: q.hint, unit: formatNumber(q.unit), unitLabel: q.unitLabel }
+      : null,
+    clock,
+  });
 }
 
 /** 全体表示のときの対数レンジ(buildLadderChart の既定と一致させる)。 */

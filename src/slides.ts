@@ -14,6 +14,7 @@ import {
   EXAMPLE,
   KICKER,
   LADDER,
+  QUESTION,
   SLIDES,
   type El,
   type NumbersSpec,
@@ -122,6 +123,8 @@ function element(el: El): string {
       );
     case "math":
       return mathEl(el);
+    case "rich":
+      return richEl(el);
   }
 }
 
@@ -141,6 +144,34 @@ function mathEl(el: { x: number; y: number; size: number; tex: string; color?: s
   return (
     `<foreignObject x="${el.x}" y="${el.y}" width="${w}" height="${h}" class="howto-fo">` +
     `<div xmlns="http://www.w3.org/1999/xhtml" class="howto-math" style="font-size:${el.size}px;color:${color}">${html}</div>` +
+    `</foreignObject>`
+  );
+}
+
+/** 日本語テキスト＋インライン数式($...$)の一行を foreignObject で描く。 */
+function richEl(el: {
+  x: number;
+  y: number;
+  size: number;
+  md: string;
+  color?: string;
+  weight?: number;
+}): string {
+  // $...$ で分割(偶数番=地の文、奇数番=数式)。
+  const html = el.md
+    .split(/\$([^$]+)\$/)
+    .map((seg, i) =>
+      i % 2 === 1
+        ? katex.renderToString(seg, { throwOnError: false, displayMode: false, output: "html" })
+        : esc(seg),
+    )
+    .join("");
+  const color = MATH_COLOR[el.color ?? "ink"] ?? "var(--ink)";
+  const w = CANVAS.w - el.x;
+  const h = el.size * 2.4;
+  return (
+    `<foreignObject x="${el.x}" y="${el.y}" width="${w}" height="${h}" class="howto-fo">` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" class="howto-rich" style="font-size:${el.size}px;color:${color};font-weight:${el.weight ?? 700}">${html}</div>` +
     `</foreignObject>`
   );
 }
@@ -306,6 +337,75 @@ function renderSlide(slide: Slide): string {
 export function buildCoverSlide(): string {
   const inner = COVER.elements.map(element).join("");
   return `<div class="proj-slide proj-cover">${canvas(inner)}</div>`;
+}
+
+/** お題スライドの 1 要素(HTML を foreignObject で座標に置く)。y は左上。 */
+function qBlock(
+  x: number,
+  y: number,
+  w: number,
+  size: number,
+  color: string,
+  weight: number,
+  inner: string,
+  attr = "",
+): string {
+  return (
+    `<foreignObject x="${x}" y="${y}" width="${w}" height="${size * 5}" class="howto-fo"${attr}>` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" class="q-fo" style="font-size:${size}px;color:var(--${color});font-weight:${weight}">${inner}</div>` +
+    `</foreignObject>`
+  );
+}
+
+/** お題スライド。位置・サイズは slides.config.ts の QUESTION(キャンバス座標)。 */
+export function buildQuestionSlide(args: {
+  roundNo: number;
+  question: { title: string; hint: string; unit: string; unitLabel: string } | null;
+  clock: string | null;
+}): string {
+  const Q = QUESTION;
+  const parts: string[] = [];
+
+  const round = `${Q.round.prefix}${args.roundNo}${Q.round.suffix}`;
+  parts.push(qBlock(Q.round.x, Q.round.y, CANVAS.w - Q.round.x, Q.round.size, Q.round.color, 900, esc(round)));
+
+  if (!args.question) {
+    const a = Q.awaiting;
+    parts.push(qBlock(a.x, a.y, CANVAS.w - a.x, a.size, a.color, 900, esc(a.text)));
+  } else {
+    const q = args.question;
+    parts.push(qBlock(Q.title.x, Q.title.y, Q.title.w, Q.title.size, Q.title.color, 900, esc(q.title)));
+    if (Q.hint.show) {
+      parts.push(qBlock(Q.hint.x, Q.hint.y, Q.hint.w, Q.hint.size, Q.hint.color, 700, esc(q.hint)));
+    }
+    const box =
+      `<span class="q-unit-box${Q.unit.boxed ? " is-boxed" : ""}">` +
+      `<span class="q-unit-label" style="font-size:${Q.unit.labelSize}px">${esc(Q.unit.label)}</span>` +
+      `<span class="q-unit-val" style="font-size:${Q.unit.size}px">${esc(q.unit)} ${esc(q.unitLabel)}</span>` +
+      `</span>`;
+    parts.push(
+      `<foreignObject x="${Q.unit.x}" y="${Q.unit.y}" width="${CANVAS.w - Q.unit.x}" height="${Q.unit.size * 3}" class="howto-fo">` +
+        `<div xmlns="http://www.w3.org/1999/xhtml">${box}</div></foreignObject>`,
+    );
+  }
+
+  if (args.clock != null) {
+    // 時計は projection 側の interval が [data-timer] .clock を毎秒書き換える。
+    parts.push(
+      qBlock(
+        Q.timer.x,
+        Q.timer.y,
+        CANVAS.w - Q.timer.x,
+        Q.timer.size,
+        Q.timer.color,
+        900,
+        `<span class="clock">${esc(args.clock)}</span>`,
+        ' data-timer',
+      ),
+    );
+  }
+
+  return `<div class="proj-slide proj-question">${canvas(parts.join(""))}</div>`;
 }
 
 /** ルール説明スライド 1 枚ぶんの HTML を返す。 */
