@@ -31,7 +31,7 @@ export interface ChartOptions {
   answerDrop?: boolean;
 }
 
-const MARGIN = { top: 24, right: 24, bottom: 104, left: 92 };
+const MARGIN = { top: 24, right: 24, bottom: 144, left: 92 };
 
 function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
@@ -148,8 +148,8 @@ export function buildLadderChart(o: ChartOptions): string {
 
     parts.push(`</g>`); // クリップ領域ここまで
 
-    // グループ名(バンド数に応じて拡大)。プロット下に名前→得点の順。
-    const nameY = plotTop + plotH + nameSize;
+    // グループ名(バンド数に応じて拡大)。プロット下に名前→得点の順(少し下げる)。
+    const nameY = plotTop + plotH + nameSize + 36;
     parts.push(
       `<text class="group-name" x="${cx}" y="${nameY}" text-anchor="middle" style="font-size:${nameSize}px">${esc(g.name)}</text>`,
     );

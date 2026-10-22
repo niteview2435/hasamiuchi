@@ -269,7 +269,7 @@ export function mountProjection(root: HTMLElement): void {
 
     const start = zoomCurrent;
     const t0 = performance.now();
-    const duration = 600;
+    const duration = 1100;
     paintChart(root, state, zoomCurrent, false); // 空フレームを避けて即描画
     const step = (now: number): void => {
       const t = Math.min(1, (now - t0) / duration);

@@ -536,7 +536,7 @@ body.view-projection #app {
 .proj-reveal .round-no {
   font-family: var(--font-display);
   font-size: 3.4vmin;
-  margin: 1.6vmin 0 0.6vmin;
+  margin: 5.6vmin 0 0.6vmin;
   color: var(--accent);
 }
 .chart-wrap {
@@ -581,6 +581,7 @@ body.view-projection #app {
   font-weight: 900;
   font-size: 5.5vmin;
   letter-spacing: 0.04em;
+  transform: translateY(-4vmin); /* 「正解＋値」を少し上に */
 }
 
 .proj-ranking {
