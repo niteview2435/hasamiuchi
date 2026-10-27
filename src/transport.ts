@@ -9,6 +9,9 @@
 //   代表者 → 司会 : GroupSubmission(そのグループが出した数字)
 // 正解は決して載せない。SessionBroadcast のお題は正解を含まない公開サブセット。
 
+import { firebaseEnabled } from "./firebase.config";
+import { createFirebaseTransport } from "./firebaseTransport";
+
 /** 送信画面に見せてよいお題情報(正解は含めない)。 */
 export interface PublicQuestion {
   title: string;
@@ -165,12 +168,22 @@ export function createLocalTransport(): SubmitTransport {
 
 // ---- ファクトリ -----------------------------------------------------------
 //
-// いまはローカル実装のみ。Firebase の設定が入ったら、ここで切り替える。
-// (例:window の firebaseConfig や環境変数を見て createFirebaseTransport を返す)
+// 設定(firebase.config.ts)に apiKey があれば Firebase 版を使い、別端末間で
+// 同期する。無ければ、または初期化に失敗したら、同一ブラウザ内だけのローカル版へ
+// フォールバックする(本番で止めないため)。
 
 let instance: SubmitTransport | null = null;
 
 export function getTransport(): SubmitTransport {
-  if (!instance) instance = createLocalTransport();
+  if (instance) return instance;
+  if (firebaseEnabled) {
+    try {
+      instance = createFirebaseTransport();
+      return instance;
+    } catch (error) {
+      console.warn("[hasamiuchi] Firebase 初期化に失敗。ローカル版で続行します。", error);
+    }
+  }
+  instance = createLocalTransport();
   return instance;
 }
