@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// ハサミウチ 第2段階:スマホ回答送信の Firestore アクセスルール。
+//
+// 方針:
+//  - 正解はそもそもクライアントが書き込まない(送信画面・司会画面のコードが載せない)。
+//  - 送信は「司会が受付を開いている & そのラウンド」のときだけ受け付ける。
+//  - 司会用の認証は付けていない(レク用途)。session の書き換えは誰でも可能だが、
+//    送信画面の UI には公開操作を出していない。より厳密にしたい場合は後述の
+//    Anonymous Auth + 司会フラグで固められる。
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 司会が公開する受付状況(現ラウンド・開閉・お題)。読み取りは全員可。
+    match /meta/session {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 各グループの送信。受付中 かつ そのラウンドのときだけ作成・更新できる。
+    match /submissions/{id} {
+      allow read: if true;
+      allow write: if
+        request.resource.data.keys().hasOnly(['round', 'group', 'numbers', 'submittedAt'])
+        && request.resource.data.round is int
+        && request.resource.data.group is int
+        && request.resource.data.numbers is list
+        && exists(/databases/$(database)/documents/meta/session)
+        && get(/databases/$(database)/documents/meta/session).data.open == true
+        && request.resource.data.round == get(/databases/$(database)/documents/meta/session).data.round;
+    }
+
+    // それ以外は全部拒否。
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

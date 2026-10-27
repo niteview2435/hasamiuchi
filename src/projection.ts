@@ -3,7 +3,7 @@
 
 import { buildLadderChart, type ChartGroup } from "./chart";
 import { formatNumber, formatScore } from "./format";
-import { buildCoverSlide, buildHowtoSlide, buildQuestionSlide } from "./slides";
+import { buildCoverSlide, buildHowtoSlide, buildQuestionSlide, buildSubmitSlide } from "./slides";
 import { computeRoundResults, cumulativeTotals, type GroupResult } from "./results";
 import { subscribe } from "./state";
 import type { AppState } from "./types";
@@ -278,6 +278,9 @@ export function mountProjection(root: HTMLElement): void {
         break;
       case "ranking":
         html = renderRanking(state);
+        break;
+      case "submit":
+        html = buildSubmitSlide(`${location.origin}${location.pathname}?view=submit`);
         break;
       default:
         html = renderBlank();

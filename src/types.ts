@@ -35,7 +35,7 @@ export interface Round {
   ladders: (number | null)[][];
 }
 
-export type ProjectionScreen = "blank" | "howto" | "question" | "reveal" | "ranking";
+export type ProjectionScreen = "blank" | "howto" | "question" | "reveal" | "ranking" | "submit";
 
 export interface ProjectionState {
   screen: ProjectionScreen;

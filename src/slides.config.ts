@@ -137,13 +137,6 @@ export const DEFAULT_BODY = { x: 90, y: 330, gap: 90, size: 50, weight: 700 as c
 /** お題表示の既定位置。 */
 export const DEFAULT_QUESTION: Txt = { text: "", x: 90, y: 760, size: 38, weight: 900 };
 
-/**
- * 自動送り:「1人目」のスライドが出たら、そこから「最後の人」まで
- * この秒数ごとに勝手に次へ進む(クリック不要)。
- * sec を 0 にすると自動送りを止めて、手動(戻る/次へ)だけにする。
- */
-export const AUTO_ADVANCE = { sec: 1.4 };
-
 /** 数字の並び(右側)の既定レイアウト。 */
 export const LADDER = {
   railX: 1150,

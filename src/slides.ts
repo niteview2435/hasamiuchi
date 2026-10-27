@@ -4,8 +4,8 @@
 
 import katex from "katex";
 import { formatNumber } from "./format";
+import { qrSvg } from "./qr";
 import {
-  AUTO_ADVANCE,
   CANVAS,
   COVER,
   DEFAULT_BODY,
@@ -60,16 +60,6 @@ export function howtoPageOf(step: number): number {
 export function howtoPageStart(page: number): number {
   return PAGES[Math.max(0, Math.min(PAGES.length - 1, page))]?.from ?? 0;
 }
-
-/**
- * 自動送りの範囲。「1人目」(show===1)から「最後の人」(show===人数)まで、
- * AUTO_ADVANCE.sec 秒ごとに進める。司会コンソールが参照する。
- */
-export const HOWTO_AUTO = {
-  sec: AUTO_ADVANCE.sec,
-  from: SLIDES.findIndex((s) => s.numbers?.show === 1),
-  to: SLIDES.findIndex((s) => s.numbers?.show === EXAMPLE.people.length),
-};
 
 function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
@@ -389,6 +379,22 @@ export function buildQuestionSlide(args: {
   }
 
   return `<div class="proj-slide proj-question">${canvas(parts.join(""))}</div>`;
+}
+
+/** 回答送信の QR コードスライド(投影)。全グループ共通 URL を大きく掲示する。 */
+export function buildSubmitSlide(url: string): string {
+  return `
+    <div class="proj-slide proj-submit">
+      <p class="submit-slide-kicker">スマホで回答を送信</p>
+      <h1 class="submit-slide-title">QR を読み取ってください</h1>
+      <div class="submit-slide-qr">${qrSvg(url)}</div>
+      <ol class="submit-slide-steps">
+        <li>カメラで QR を読み取る</li>
+        <li>自分の<strong>グループ</strong>を選ぶ</li>
+        <li>数字を入れて<strong>送信</strong></li>
+      </ol>
+      <p class="submit-slide-url">${esc(url)}</p>
+    </div>`;
 }
 
 /** ルール説明スライド 1 枚ぶんの HTML を返す。 */
