@@ -298,6 +298,9 @@ export const SLIDES: Slide[] = [
     title: { text: "せまくはさむほど高得点" },
     body: { x: 90, y: 450, lines: ["はさんだ幅がせまいほど点は高い。", "大きく開いていると、低くなる。"] },
     extras: [
+      // 左:幅そのもので点が決まる(まわりとの勝負ではない)という念押し
+      { kind: "text", text: "グループ間でのランキングではない。", x: 90, y: 660, size: 45, weight: 700 },
+      { kind: "text", text: "挟んだ幅のせまさだけで点が決まる。", x: 90, y: 740, size: 45, color: "accent", weight: 900 },
       // せまい
       { kind: "rect", x: 1040, y: 360, w: 120, h: 80, fill: "band" },
       { kind: "vline", x: 1100, y1: 360, y2: 440 },
@@ -306,6 +309,7 @@ export const SLIDES: Slide[] = [
       { kind: "hline", x1: 1016, x2: 1184, y: 400, style: "answer" },
       { kind: "text", text: "せまい", x: 1100, y: 620, size: 46, align: "middle", color: "accent", weight: 900 },
       { kind: "text", text: "高得点", x: 1100, y: 682, size: 32, align: "middle", color: "muted" },
+      { kind: "text", text: "最大30点", x: 1100, y: 770, size: 44, align: "middle", color: "accent", weight: 900 },
       // ひろい
       { kind: "rect", x: 1340, y: 250, w: 120, h: 300, fill: "band" },
       { kind: "vline", x: 1400, y1: 250, y2: 550 },
@@ -314,6 +318,49 @@ export const SLIDES: Slide[] = [
       { kind: "hline", x1: 1316, x2: 1484, y: 400, style: "answer" },
       { kind: "text", text: "ひろい", x: 1400, y: 620, size: 40, align: "middle", weight: 900 },
       { kind: "text", text: "低得点", x: 1400, y: 682, size: 32, align: "middle", color: "muted" },
+      { kind: "text", text: "1〜10点", x: 1400, y: 770, size: 44, align: "middle", weight: 900 },
+    ],
+  },
+  // 8.5 補足:得点の詳細(写真用の細かいページ。数式は LaTeX=KaTeX)------
+  {
+    name: "補足:得点の詳細",
+    title: { text: "補足 : 得点のくわしい計算", x: 90, y: 180, size: 50 },
+    body: { lines: [] },
+    extras: [
+      { kind: "vline", x: 775, y1: 250, y2: 835 },
+
+      // ---- 左列:得点計算(見出し＋インライン数式でゆったり) ----
+      { kind: "text", text: "記号", x: 90, y: 300, size: 30, color: "accent", weight: 900 },
+      { kind: "rich", x: 90, y: 338, size: 28, md: "$x_1 < x_2 < \\cdots < x_m$   (正解 $a$、係数 $c=20$)" },
+
+      { kind: "text", text: "挟んだ比 r", x: 90, y: 462, size: 30, color: "accent", weight: 900 },
+      { kind: "rich", x: 90, y: 500, size: 32, md: "$x_k < a < x_{k+1}\\quad\\rightarrow\\quad r = \\dfrac{x_{k+1}}{x_k}$" },
+
+      { kind: "text", text: "素点 S", x: 90, y: 652, size: 30, color: "accent", weight: 900 },
+      { kind: "rich", x: 90, y: 660, size: 32, md: "$S = \\max(1,\\ 30 - c\\log_2 r)$" },
+      { kind: "rich", x: 90, y: 740, size: 23, color: "muted", md: "外れ $=0$ 点 / 一致 $=30$ 点 / 挟めれば最低 $1$ 点" },
+
+      // ---- 右列:人数ハンデ・ピタリ賞・早見表 ----
+      { kind: "text", text: "人数ハンデ", x: 850, y: 290, size: 30, color: "accent", weight: 900 },
+      { kind: "rich", x: 850, y: 310, size: 26, md: "$p = \\dfrac{m_i-1}{m_{\\max}-1}$ を素点のペナルティに掛ける" },
+      { kind: "rich", x: 850, y: 385, size: 26, md: "$S = \\max(1,\\ 30 - c\\,p\\log_2 r)$" },
+      { kind: "rich", x: 785, y: 440, size: 22, color: "muted", md: "同数なら $p=1$ で無影響。ピタリ賞のボーナスには掛からない。" },
+
+      { kind: "text", text: "ピタリ賞", x: 850, y: 540, size: 30, color: "accent", weight: 900 },
+      { kind: "text", text: "正解を丸めた値に一致で +20 点", x: 850, y: 590, size: 26, weight: 700 },
+
+      { kind: "text", text: "早見表(c = 20)", x: 850, y: 652, size: 30, color: "accent", weight: 900 },
+      { kind: "text", text: "比 r", x: 870, y: 706, size: 24, color: "muted" },
+      { kind: "text", text: "得点", x: 1110, y: 706, size: 24, color: "muted" },
+      { kind: "hline", x1: 860, x2: 1470, y: 717, style: "thin" },
+      { kind: "text", text: "1.00", x: 870, y: 748, size: 26, mono: true },
+      { kind: "text", text: "30(満点)", x: 1110, y: 748, size: 26 },
+      { kind: "text", text: "1.41", x: 870, y: 776, size: 26, mono: true },
+      { kind: "text", text: "20", x: 1110, y: 776, size: 26 },
+      { kind: "text", text: "2.00", x: 870, y: 804, size: 26, mono: true },
+      { kind: "text", text: "10", x: 1110, y: 804, size: 26 },
+      { kind: "text", text: "2.83 以上", x: 870, y: 832, size: 26, mono: true },
+      { kind: "text", text: "1(最低)", x: 1110, y: 832, size: 26 },
     ],
   },
   // 9 はさめた/外れ -------------------------------------------------------
@@ -408,48 +455,6 @@ export const SLIDES: Slide[] = [
       { kind: "text", text: "× 中途半端な数はダメ", x: 810, y: 650, size: 42, color: "muted", weight: 900 },
       { kind: "rect", x: 810, y: 675, w: 600, h: 85, fill: "none", stroke: true },
       { kind: "text", text: "21店・195店 はナシ", x: 835, y: 732, size: 40, color: "muted", weight: 700 },
-    ],
-  },
-  // 13 補足:得点の詳細(写真用の細かいページ。数式は LaTeX=KaTeX)--------
-  {
-    name: "補足:得点の詳細",
-    title: { text: "補足 : 得点のくわしい計算", x: 90, y: 180, size: 50 },
-    body: { lines: [] },
-    extras: [
-      { kind: "vline", x: 775, y1: 250, y2: 835 },
-
-      // ---- 左列:得点計算(見出し＋インライン数式でゆったり) ----
-      { kind: "text", text: "記号", x: 90, y: 300, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 90, y: 338, size: 28, md: "$x_1 < x_2 < \\cdots < x_m$   (正解 $a$、係数 $c=20$)" },
-
-      { kind: "text", text: "挟んだ比 r", x: 90, y: 462, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 90, y: 500, size: 32, md: "$x_k < a < x_{k+1}\\quad\\rightarrow\\quad r = \\dfrac{x_{k+1}}{x_k}$" },
-
-      { kind: "text", text: "素点 S", x: 90, y: 652, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 90, y: 660, size: 32, md: "$S = \\max(1,\\ 30 - c\\log_2 r)$" },
-      { kind: "rich", x: 90, y: 740, size: 23, color: "muted", md: "外れ $=0$ 点 / 一致 $=30$ 点 / 挟めれば最低 $1$ 点" },
-
-      // ---- 右列:人数ハンデ・ピタリ賞・早見表 ----
-      { kind: "text", text: "人数ハンデ", x: 850, y: 290, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 850, y: 310, size: 26, md: "$p = \\dfrac{m_i-1}{m_{\\max}-1}$ を素点のペナルティに掛ける" },
-      { kind: "rich", x: 850, y: 385, size: 26, md: "$S = \\max(1,\\ 30 - c\\,p\\log_2 r)$" },
-      { kind: "rich", x: 785, y: 440, size: 22, color: "muted", md: "同数なら $p=1$ で無影響。ピタリ賞のボーナスには掛からない。" },
-
-      { kind: "text", text: "ピタリ賞", x: 850, y: 540, size: 30, color: "accent", weight: 900 },
-      { kind: "text", text: "正解を丸めた値に一致で +20 点", x: 850, y: 590, size: 26, weight: 700 },
-
-      { kind: "text", text: "早見表(c = 20)", x: 850, y: 652, size: 30, color: "accent", weight: 900 },
-      { kind: "text", text: "比 r", x: 870, y: 706, size: 24, color: "muted" },
-      { kind: "text", text: "得点", x: 1110, y: 706, size: 24, color: "muted" },
-      { kind: "hline", x1: 860, x2: 1470, y: 717, style: "thin" },
-      { kind: "text", text: "1.00", x: 870, y: 748, size: 26, mono: true },
-      { kind: "text", text: "30(満点)", x: 1110, y: 748, size: 26 },
-      { kind: "text", text: "1.41", x: 870, y: 776, size: 26, mono: true },
-      { kind: "text", text: "20", x: 1110, y: 776, size: 26 },
-      { kind: "text", text: "2.00", x: 870, y: 804, size: 26, mono: true },
-      { kind: "text", text: "10", x: 1110, y: 804, size: 26 },
-      { kind: "text", text: "2.83 以上", x: 870, y: 832, size: 26, mono: true },
-      { kind: "text", text: "1(最低)", x: 1110, y: 832, size: 26 },
     ],
   },
   // 14 まとめ -------------------------------------------------------------
