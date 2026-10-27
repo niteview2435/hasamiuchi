@@ -6,7 +6,6 @@
 
 import { formatNumber, formatScore } from "./format";
 import {
-  HOWTO_AUTO,
   HOWTO_PAGE_COUNT,
   HOWTO_PAGE_TITLES,
   HOWTO_STEP_COUNT,
@@ -21,6 +20,9 @@ import {
   importStateJson,
   update,
 } from "./state";
+import { qrSvg } from "./qr";
+import { getTransport, submissionKey } from "./transport";
+import type { SessionBroadcast } from "./transport";
 import type { AppState, Question } from "./types";
 import {
   groupLetters,
@@ -30,29 +32,19 @@ import {
   roundQuestion,
 } from "./types";
 
-type Tab = "settings" | "howto" | "question" | "input" | "reveal" | "ranking";
+type Tab = "settings" | "howto" | "question" | "input" | "reception" | "reveal" | "ranking";
 
 const TAB_LABELS: Record<Tab, string> = {
   settings: "設定",
   howto: "説明",
   question: "お題",
   input: "入力",
+  reception: "受付(スマホ)",
   reveal: "公開・結果",
   ranking: "ランキング",
 };
 
 let activeTab: Tab = "settings";
-
-// 説明スライドの自動送り:「1人目」が出たら最後の人まで勝手に進む(次へ 1 回ぶんの予約)。
-let howtoTimer: number | null = null;
-// 司会が「停止」を押している間は自動送りしない(手動の戻る/次へは効く)。
-let howtoPaused = false;
-function stopHowtoAuto(): void {
-  if (howtoTimer != null) {
-    window.clearTimeout(howtoTimer);
-    howtoTimer = null;
-  }
-}
 
 function esc(s: string): string {
   return s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"));
@@ -147,16 +139,15 @@ function renderHowtoTab(state: AppState): string {
   return `
     <section class="panel">
       <h2>ルール説明スライド</h2>
-      <p class="muted">人のアイコンと具体例(富士山の登山者数)で、1人ずつ数字を出して正解をはさむ流れを見せます。「1人目」が出ると、そこから「最後の人」まで ${HOWTO_AUTO.sec} 秒ごとに自動で進み、最後まで行くと「1人目」に戻ってループします。</p>
+      <p class="muted">人のアイコンと具体例(富士山の登山者数)で、1人ずつ数字を出して正解をはさむ流れを見せます。「次へ」を押すたびに 1 人ずつ進みます。</p>
       <div class="btn-row">
         <button data-howto-open class="primary">投影に説明を表示</button>
-        <button data-howto-playpause>${howtoPaused ? "▶ 再生" : "⏸ 停止"}</button>
         <button data-howto-restart class="ghost">最初から</button>
       </div>
       <div class="btn-row">
         <button data-howto-prev>◀ 戻る</button>
         <button data-howto-next class="primary">次へ ▶</button>
-        <span class="status howto-nav-status">${onHowto ? `ステップ ${page + 1} / ${HOWTO_PAGE_COUNT}(${esc(HOWTO_PAGE_TITLES[page] ?? "")})${howtoPaused ? " ・停止中" : ""}` : "投影外"}</span>
+        <span class="status howto-nav-status">${onHowto ? `ステップ ${page + 1} / ${HOWTO_PAGE_COUNT}(${esc(HOWTO_PAGE_TITLES[page] ?? "")})` : "投影外"}</span>
       </div>
     </section>
 
@@ -236,6 +227,103 @@ function renderInput(state: AppState): string {
       <div class="btn-row">
         <button data-clear-round class="ghost">このラウンドの入力をクリア</button>
       </div>
+    </section>`;
+}
+
+// ---- 受付(第2段階:代表者スマホからの送信)------------------------------
+
+/** 現在の状態から、送信画面へ公開するセッション情報を作る(正解は載せない)。 */
+function buildSession(state: AppState, open: boolean): SessionBroadcast {
+  const round = currentRound(state);
+  const q = round ? roundQuestion(state, round) : null;
+  return {
+    round: state.currentRound,
+    open,
+    groups: state.settings.groups.map((name, i) => ({
+      name,
+      runnerCount: state.settings.runnerCounts[i] ?? 0,
+    })),
+    question: q
+      ? { title: q.title, hint: q.hint, unit: q.unit, unitLabel: q.unitLabel }
+      : null,
+    updatedAt: Date.now(),
+  };
+}
+
+function submitUrl(): string {
+  return `${location.origin}${location.pathname}?view=submit`;
+}
+
+function renderReception(state: AppState): string {
+  const snap = getTransport().getSnapshot();
+  const session = snap.session;
+  const open = session?.open ?? false;
+  const transportKind = getTransport().kind;
+  const round = state.currentRound;
+  const url = submitUrl();
+
+  const rows = state.settings.groups
+    .map((name, gi) => {
+      const sub = snap.submissions[submissionKey(round, gi)];
+      const status = sub
+        ? `<span class="recv-ok">送信済み ${new Date(sub.submittedAt).toLocaleTimeString("ja-JP")}</span>`
+        : `<span class="recv-none">未送信</span>`;
+      const nums = sub
+        ? sub.numbers.map((v) => (v == null ? "—" : formatNumber(v))).join(" / ")
+        : "—";
+      return `<tr>
+        <td>${esc(name)}</td>
+        <td>${status}</td>
+        <td class="nums">${nums}</td>
+        <td><button data-recv-import="${gi}" ${sub ? "" : "disabled"}>入力表へ取り込む</button></td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+    <section class="panel">
+      <h2>スマホ受付(第 ${round + 1} ラウンド)</h2>
+      <p class="muted">
+        代表者のスマホから数字を送ってもらい、ここで確認して入力表へ取り込みます。
+        通信が不調なら「入力」タブの手入力にそのまま切り替えられます(受付は補助です)。
+        同期方式:<strong>${transportKind === "local" ? "ローカル(同一ブラウザの別タブ・別ウィンドウ間のみ。動作確認・リハーサル用)" : "Firebase"}</strong>
+      </p>
+      <div class="btn-row">
+        ${open
+          ? `<button data-recv-close class="ghost">受付を締め切る</button>
+             <button data-recv-republish>お題・ラウンドを再公開</button>`
+          : `<button data-recv-open class="primary">受付を開始(今のお題を公開)</button>`}
+        <span class="status">${open ? "受付中" : "停止中"}</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>回答送信の QR(全グループ共通)</h2>
+      <p class="muted">参加者は QR を読み取り、送信画面でグループを選んで送ります。投影に大きく出せます。</p>
+      <div class="recv-qr-row">
+        <div class="recv-qr">${qrSvg(url)}</div>
+        <div class="recv-qr-side">
+          <div class="btn-row">
+            <button data-recv-show-qr class="primary">投影に QR を表示</button>
+            <a class="file-btn ghost" href="${url}" target="_blank" rel="noopener">送信画面を開く</a>
+          </div>
+          <p class="recv-url"><code>${esc(url)}</code></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>送信状況</h2>
+      <div class="grid-scroll">
+        <table class="recv-table">
+          <thead><tr><th>グループ</th><th>状況</th><th>送信された数字</th><th>取り込み</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button data-recv-import-all class="primary">送信済みを全グループ取り込む</button>
+      </div>
+      <p class="muted">取り込むと「入力」タブの表に反映されます。取り込み後に手で訂正できます。</p>
     </section>`;
 }
 
@@ -418,6 +506,7 @@ export function mountControl(root: HTMLElement): void {
       question: "お題",
       reveal: "結果",
       ranking: "ランキング",
+      submit: "回答送信QR",
     };
     projStatus.textContent = `投影中の画面:${screenName[state.projection.screen] ?? state.projection.screen}`;
     tabsEl.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((b) => {
@@ -443,6 +532,10 @@ export function mountControl(root: HTMLElement): void {
       case "input":
         main.innerHTML = renderInput(state);
         bindInput();
+        break;
+      case "reception":
+        main.innerHTML = renderReception(state);
+        bindReception();
         break;
       case "reveal":
         main.innerHTML = renderReveal(state);
@@ -530,10 +623,6 @@ export function mountControl(root: HTMLElement): void {
       update((s) => (s.projection.screen = "howto"));
       renderActive();
     });
-    main.querySelector("[data-howto-playpause]")?.addEventListener("click", () => {
-      howtoPaused = !howtoPaused;
-      renderActive(); // ボタン表示を更新し、bindHowto で予約し直す/止める
-    });
     main.querySelector("[data-howto-restart]")?.addEventListener("click", () => setStep(0));
     main.querySelector("[data-howto-prev]")?.addEventListener("click", () =>
       setStep(getState().projection.howtoStep - 1),
@@ -544,25 +633,6 @@ export function mountControl(root: HTMLElement): void {
     main.querySelectorAll<HTMLButtonElement>("[data-howto-go]").forEach((btn) => {
       btn.addEventListener("click", () => setStep(Number(btn.dataset.howtoGo)));
     });
-
-    // 自動送り:「1人目」〜「最後の人」の範囲にいる間は、一定秒で勝手に次へ進む。
-    // 最後まで行ったら「1人目」へ戻ってループする(「次へ」を押せば先のスライドへ抜ける)。
-    // 各描画のたびに予約し直す(setStep → 再描画 → ここで次を予約、の連鎖)。
-    stopHowtoAuto();
-    const p = getState().projection;
-    if (
-      !howtoPaused &&
-      HOWTO_AUTO.sec > 0 &&
-      HOWTO_AUTO.from >= 0 &&
-      p.screen === "howto" &&
-      p.howtoStep >= HOWTO_AUTO.from &&
-      p.howtoStep <= HOWTO_AUTO.to
-    ) {
-      howtoTimer = window.setTimeout(() => {
-        const cur = getState().projection.howtoStep;
-        setStep(cur < HOWTO_AUTO.to ? cur + 1 : HOWTO_AUTO.from);
-      }, HOWTO_AUTO.sec * 1000);
-    }
   }
 
   function bindQuestion(): void {
@@ -685,6 +755,56 @@ export function mountControl(root: HTMLElement): void {
     refreshCellValidity();
   }
 
+  function bindReception(): void {
+    const transport = getTransport();
+    const publish = (open: boolean) => {
+      transport.publishSession(buildSession(getState(), open));
+      renderActive();
+    };
+    main.querySelector("[data-recv-open]")?.addEventListener("click", () => publish(true));
+    main.querySelector("[data-recv-close]")?.addEventListener("click", () => publish(false));
+    main.querySelector("[data-recv-republish]")?.addEventListener("click", () => publish(true));
+    main.querySelector("[data-recv-show-qr]")?.addEventListener("click", () => {
+      // 受付がまだなら、QR 表示と同時に受付も開始して公開しておく。
+      if (!getTransport().getSnapshot().session?.open) {
+        transport.publishSession(buildSession(getState(), true));
+      }
+      update((s) => (s.projection.screen = "submit"));
+      renderActive();
+    });
+
+    const importGroup = (gi: number): boolean => {
+      const snap = transport.getSnapshot();
+      const sub = snap.submissions[submissionKey(getState().currentRound, gi)];
+      if (!sub) return false;
+      update((s) => {
+        const ladder = s.rounds[s.currentRound]?.ladders[gi];
+        if (!ladder) return;
+        const m = s.settings.runnerCounts[gi] ?? 0;
+        for (let ri = 0; ri < m; ri++) {
+          const v = sub.numbers[ri];
+          ladder[ri] = v != null && Number.isFinite(v) ? v : null;
+        }
+      });
+      return true;
+    };
+
+    main.querySelectorAll<HTMLButtonElement>("[data-recv-import]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        importGroup(Number(btn.dataset.recvImport));
+        renderActive();
+      });
+    });
+    main.querySelector("[data-recv-import-all]")?.addEventListener("click", () => {
+      let n = 0;
+      getState().settings.groups.forEach((_, gi) => {
+        if (importGroup(gi)) n++;
+      });
+      renderActive();
+      if (n === 0) alert("取り込める送信がまだありません。");
+    });
+  }
+
   function refreshPreview(): void {
     const el = main.querySelector<HTMLElement>("[data-preview]");
     if (el) el.innerHTML = revealPreviewTable(getState());
@@ -787,7 +907,6 @@ export function mountControl(root: HTMLElement): void {
 
   tabsEl.querySelectorAll<HTMLButtonElement>("[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      stopHowtoAuto();
       activeTab = btn.dataset.tab as Tab;
       renderActive();
     });
@@ -853,6 +972,17 @@ export function mountControl(root: HTMLElement): void {
     e.preventDefault();
     const sel = e.key === "ArrowRight" ? "[data-howto-next]" : "[data-howto-prev]";
     main.querySelector<HTMLButtonElement>(sel)?.click();
+  });
+
+  // スマホからの送信が届いたら、受付タブを開いているときだけ描き直す。
+  // (受付タブは連続入力中のテキスト欄が無いので全描画でフォーカス問題は起きない)
+  let firstSubmitSnapshot = true;
+  getTransport().subscribe(() => {
+    if (firstSubmitSnapshot) {
+      firstSubmitSnapshot = false; // 購読時の即時コールバックでは再描画しない
+      return;
+    }
+    if (activeTab === "reception") renderActive();
   });
 
   renderActive();
