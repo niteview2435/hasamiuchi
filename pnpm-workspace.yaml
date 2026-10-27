@@ -1,4 +1,7 @@
 # esbuild(vite/vitest の依存)はインストール時にビルドスクリプトを走らせる。
 # pnpm 10+ は既定でブロックするため、明示的に許可する。
+# firebase が連れてくる @firebase/util / protobufjs も同様に許可が要る。
 allowBuilds:
   esbuild: true
+  "@firebase/util": true
+  protobufjs: true
