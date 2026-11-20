@@ -1,0 +1,241 @@
+% ハサミウチ 得点計算の解説(配布用)
+% ビルド: cd handout && latexmk -lualatex scoring.tex
+% 得点ロジックの正は src/scoring.ts / src/results.ts。式や既定値を変えたらここも合わせる。
+\documentclass[a4paper,10.5pt]{ltjsarticle}
+
+\usepackage[top=20mm,bottom=22mm,left=22mm,right=22mm,headsep=8mm,footskip=12mm]{geometry}
+\usepackage{luatexja-fontspec}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{calc,decorations.pathreplacing}
+\usepackage{booktabs,array,tabularx}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{siunitx}
+\usepackage{needspace}
+\sisetup{group-separator={,},group-minimum-digits=4}
+
+% ---- 色(サイトの style.css と同じトークン) ----
+\definecolor{ink}{HTML}{1A1714}
+\definecolor{accent}{HTML}{C8402F}
+\definecolor{accentsoft}{HTML}{E7B7AF}
+\definecolor{muted}{HTML}{6F675C}
+\definecolor{paper}{HTML}{F4EFE6}
+\definecolor{paperedge}{HTML}{DDD3BF}
+
+% ---- 書体:見出しは極太ゴシック、本文は明朝 ----
+\newjfontfamily\heavy{HaranoAjiGothic-Heavy.otf}
+\newjfontfamily\gbold{HaranoAjiGothic-Bold.otf}
+\newfontfamily\heavylatin{HaranoAjiGothic-Heavy.otf}
+\newcommand{\hv}{\heavy\heavylatin}
+
+\color{ink}
+\setlength{\parindent}{1\zw}
+\renewcommand{\baselinestretch}{1.1}
+
+% ---- 見出し ----
+\titleformat{\section}
+  {\hv\Large}
+  {\textcolor{accent}{\thesection}}
+  {0.8em}
+  {}
+  [\vspace{-0.6ex}{\color{ink}\titlerule[2.4pt]}]
+\titlespacing*{\section}{0pt}{2.6ex}{1.4ex}
+\titleformat{\subsection}
+  {\hv\large}
+  {}
+  {0pt}
+  {\textcolor{accent}{■}\,}
+\titlespacing*{\subsection}{0pt}{2ex}{0.8ex}
+
+% ---- ヘッダ・フッタ ----
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\gbold\color{muted}ハサミウチ 〜刻むか、跳ぶか〜}
+\fancyhead[R]{\small\gbold\color{muted}得点計算のしくみ}
+\fancyfoot[C]{\small\gbold\color{muted}\thepage}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\headrule}{\color{muted}\hrule height\headrulewidth}
+
+% ---- 箱 ----
+% 大事な式(角丸・影なし、左に朱の太線)
+\newtcolorbox{keybox}[1][]{enhanced,sharp corners,boxrule=0pt,
+  colback=paper,frame hidden,borderline west={4pt}{0pt}{accent},
+  left=5mm,right=5mm,top=2mm,bottom=2mm,before skip=1.6ex,after skip=1.6ex,#1}
+% 計算例(細い罫の枠)
+\newtcolorbox{example}[1]{enhanced,sharp corners,colback=white,colframe=ink,boxrule=1pt,
+  left=4.5mm,right=4.5mm,top=2.5mm,bottom=2.5mm,before skip=1.6ex,after skip=1.6ex,
+  title={\hv #1},fonttitle=\color{white},colbacktitle=ink,
+  attach boxed title to top left={xshift=3mm,yshift=-2.2mm},
+  boxed title style={sharp corners,boxrule=0pt,colback=ink}}
+
+\newcommand{\pt}[1]{#1\,\text{点}}
+\newcommand{\term}[1]{{\gbold #1}}
+\newcommand{\note}[1]{{\small\color{muted}#1}}
+
+\setlist{itemsep=0.3ex,topsep=0.8ex,leftmargin=2\zw}
+
+\begin{document}
+
+% ================================================================ タイトル
+\thispagestyle{empty}
+\noindent
+{\gbold\color{accent}\large チーム対抗・数字当て}\par\vspace{1mm}
+\noindent
+{\hv\fontsize{40pt}{44pt}\selectfont ハサミウチ}\par\vspace{1.5mm}
+\noindent
+{\hv\Large\color{accent}― 刻むか、跳ぶか ―}\par\vspace{4mm}
+\noindent{\color{ink}\rule{\linewidth}{3pt}}\par\vspace{1.5mm}
+\noindent
+{\hv\Large 得点計算のしくみ}\hfill\par
+\vspace{4mm}
+
+\noindent
+各ラウンドの得点の決まり方です。要点は次の3つ。
+
+\begin{keybox}
+\begin{enumerate}[leftmargin=2\zw,label={\hv\color{accent}\arabic*.}]
+  \item 正解を\term{2つの数字の間に挟めた}ら点が入る。挟めなければ \pt{0}。
+  \item 挟んだ2つの数字の\term{比}が1に近い(=せまく挟んだ)ほど高得点。最大 \pt{30}、挟めていれば最低 \pt{1}。
+  \item 正解(を回答単位に丸めた値)をピタリ出した人がいれば \term{ピタリ賞 $+\pt{10}$}。
+\end{enumerate}
+\end{keybox}
+
+\noindent
+得点は\term{他のチームとの比較ではなく、自分のチームの数字だけで決まる絶対評価}です。
+他チームが何点でも、自分のチームの点は変わりません。
+
+\section{挟んだ位置と得点}
+
+チームが出した数字を小さい順に $x_1 < x_2 < \cdots < x_m$($m$ は人数)、正解を $a$ とします。
+数字はすべて回答単位 $u$ の倍数です。
+
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,line cap=round]
+  \tikzset{num/.style={ink,line width=2.2pt},ans/.style={accent,line width=1.6pt,dash pattern=on 1.5pt off 3pt},
+           lbl/.style={font=\gbold\small}}
+  % (a) 外れ
+  \begin{scope}[xshift=0cm]
+    \draw[ink,line width=0.8pt] (0,0.2) -- (0,1.6);
+    \foreach \y in {0.2,0.9,1.6} \draw[num] (-0.5,\y) -- (0.5,\y);
+    \draw[ans] (-0.8,2.3) -- (0.8,2.3);
+    \node[accent,font=\gbold\scriptsize,anchor=west] at (0.85,2.3) {$a$};
+    \node[lbl] at (0,-0.55) {外れ(上)};
+    \node[font=\hv\large,accent] at (0,-1.2) {0 点};
+    \node[font=\scriptsize,muted] at (0,-1.75) {$a > x_m$ \;または\; $a < x_1$};
+  \end{scope}
+  % (b) 挟んだ
+  \begin{scope}[xshift=4.6cm]
+    \fill[accentsoft!70] (-0.5,0.9) rectangle (0.5,1.6);
+    \draw[ink,line width=0.8pt] (0,0.2) -- (0,2.3);
+    \foreach \y in {0.2,0.9,1.6,2.3} \draw[num] (-0.5,\y) -- (0.5,\y);
+    \draw[ans] (-0.8,1.25) -- (0.8,1.25);
+    \node[accent,font=\scriptsize,anchor=west] at (0.85,1.25) {$a$};
+    \node[font=\scriptsize,anchor=east] at (-0.6,0.9) {$x_k$};
+    \node[font=\scriptsize,anchor=east] at (-0.6,1.6) {$x_{k+1}$};
+    \node[lbl] at (0,-0.55) {挟んだ};
+    \node[font=\hv\large,accent] at (0,-1.2) {1〜30 点};
+    \node[font=\scriptsize,muted] at (0,-1.75) {$x_k < a < x_{k+1}$};
+  \end{scope}
+  % (c) 一致
+  \begin{scope}[xshift=9.2cm]
+    \draw[ink,line width=0.8pt] (0,0.2) -- (0,2.3);
+    \foreach \y in {0.2,0.9,2.3} \draw[num] (-0.5,\y) -- (0.5,\y);
+    \draw[accent,line width=3.2pt] (-0.5,1.6) -- (0.5,1.6);
+    \draw[ans] (-0.8,1.6) -- (0.8,1.6);
+    \node[accent,font=\scriptsize,anchor=west] at (0.85,1.6) {$a$};
+    \node[lbl] at (0,-0.55) {ちょうど一致};
+    \node[font=\hv\large,accent] at (0,-1.2) {30 点};
+    \node[font=\scriptsize,muted] at (0,-1.75) {$x_k = a$};
+  \end{scope}
+\end{tikzpicture}
+\end{center}
+
+
+挟んだときは、正解のすぐ下 $x_k$ とすぐ上 $x_{k+1}$ の\term{比} $r = x_{k+1}/x_k$ で得点が決まります。
+
+\begin{keybox}
+\[
+  S \;=\; \max\!\Bigl(\,1,\; 30 - c \log_2 r \,\Bigr), \qquad c = 20
+\]
+\begin{center}\small 小数第1位に四捨五入。一致は $r=1$ で 30 点、外れは 0 点。\end{center}
+\end{keybox}
+
+\begin{itemize}
+  \item 挟む幅が2倍になるごとに 20 点下がります($r=\sqrt2$ で 20 点、$r=2$ で 10 点)。
+  \item 差ではなく比で測るので、正解の桁(数百か数千万か)によらず公平です。
+  \item 約 2.73 倍より広く挟むと、どれだけ広くても最低点の 1 点です。
+\end{itemize}
+
+\noindent{\gbold 早見表}($c = 20$、人数ハンデなし)
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{>{\gbold}l *{11}{c}}
+  \toprule
+  比 $r$ & $1$ & $1.05$ & $1.1$ & $1.2$ & $1.25$ & $\sqrt2$ & $1.5$ & $1.75$ & $2$ & $2.5$ & $2.73$〜 \\
+  \midrule
+  得点 $S$ & \textcolor{accent}{\hv 30} & 28.6 & 27.2 & 24.7 & 23.6 & 20.0 & 18.3 & 13.9 & 10.0 & 3.6 & 1 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+\note{「$r = 1.1$」は、たとえば $\num{1000}$ と $\num{1100}$ の間に正解が入った状態です。1割の幅で挟めれば約 \pt{27} になります。}
+
+\section{人数ハンデ}
+
+人数が多いほど細かく刻めて有利なので、人数 $m_i$ のチームは減点に
+$p_i = \dfrac{m_i - 1}{m_{\max} - 1}$ を掛けます($m_{\max}$ は最大の人数)。
+
+\begin{keybox}
+\[
+  S \;=\; \max\!\Bigl(\,1,\; 30 - c\, p_i \log_2 r \,\Bigr)
+\]
+\end{keybox}
+
+\noindent
+同じ範囲を均等に刻めば、人数によらず同じ点になる係数です(例:10 倍の範囲を均等に刻むと 4人・6人・8人とも 20.5 点)。
+全チーム同じ人数なら $p_i = 1$ で影響なし。満点・最低点・ピタリ賞には掛かりません。
+
+\section{ピタリ賞と合計}
+
+正解を回答単位に丸めた値 $\tilde a = u \cdot \operatorname{round}(a/u)$ を出した人がいれば、チームに \term{$+\pt{10}$}。
+挟めたかとは独立に判定し(外れでも入る)、何人該当しても1チーム $+\pt{10}$ です。
+例:$u = \num{1000}$、$a = \num{234700}$ なら $\tilde a = \num{235000}$。
+
+\noindent
+ラウンド得点は $S$ + ピタリ賞(最高 \pt{40})。全ラウンドの合計が最も大きいチームが優勝です。
+
+\begin{example}{例1 ふつうに挟んだ}
+お題「富士山の年間登山者数は?」、正解 $a = \num{200000}$ 人、回答単位 $u = \num{10000}$ 人。6人チームの数字:
+
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,line cap=round]
+  % 対数目盛:10万〜40万を 0〜13.6cm に
+  \newcommand{\pos}[1]{\fpeval{(ln(#1)-ln(100000))/(ln(400000)-ln(100000))*13.6}}
+  \fill[accentsoft!70] (\pos{190000},-0.3) rectangle (\pos{210000},0.3);
+  \draw[ink,line width=0.8pt] (0,0) -- (13.6,0);
+  \foreach \v/\t/\anc/\dx in {100000/10万/south/0,150000/15万/south/0,180000/18万/south east/0.12,190000/19万/south/0,210000/21万/south/0,400000/40万/south/0}{
+    \draw[ink,line width=2pt] (\pos{\v},-0.3) -- (\pos{\v},0.3);
+    \node[font=\scriptsize\gbold,anchor=\anc] at (\pos{\v}+\dx,0.36) {\t};
+  }
+  \draw[accent,line width=1.4pt,dash pattern=on 1.5pt off 2.5pt] (\pos{200000},-0.6) -- (\pos{200000},0.6);
+  \node[accent,font=\scriptsize\gbold,below] at (\pos{200000},-0.6) {正解 20万};
+  \node[muted,font=\tiny,anchor=east] at (13.6,-0.75) {対数目盛};
+\end{tikzpicture}
+\end{center}
+
+\begin{enumerate}[label=\arabic*.,leftmargin=2\zw]
+  \item 位置:$x_4 = \num{190000} < a < x_5 = \num{210000}$ なので挟めている。
+  \item 比:$r = \dfrac{\num{210000}}{\num{190000}} = \dfrac{21}{19} \approx 1.1053$。
+  \item 得点:$\log_2 1.1053 \approx 0.1444$ より $S = 30 - 20 \times 0.1444 \approx 27.11 \to \pt{27.1}$。
+  \item ピタリ賞:$\tilde a = \num{200000}$ を出した人はいないので $B = 0$。ラウンド得点 $T = \pt{27.1}$。
+\end{enumerate}
+\end{example}
+
+
+\end{document}

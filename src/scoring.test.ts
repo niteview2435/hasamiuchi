@@ -59,7 +59,7 @@ describe("computeTeamScore", () => {
   });
 
   it("ピタリは正解を単位に丸めた値への一致で成立(真の正解が半端でも可)", () => {
-    const cfg = { c: 20, pitariBonus: 20, unit: 1000 };
+    const cfg = { c: 20, pitariBonus: 10, unit: 1000 };
     const r = computeTeamScore([230000, 235000, 240000], 234700, cfg);
     expect(r.pitari).toBe(true);
     expect(r.pitariValue).toBe(235000); // 234700 → 235000 に丸め
@@ -68,7 +68,7 @@ describe("computeTeamScore", () => {
   });
 
   it("丸めた値が数字に無ければピタリにならない", () => {
-    const cfg = { c: 20, pitariBonus: 20, unit: 1000 };
+    const cfg = { c: 20, pitariBonus: 10, unit: 1000 };
     const r = computeTeamScore([230000, 236000, 240000], 234700, cfg);
     expect(r.pitari).toBe(false);
     expect(r.pitariValue).toBeNull();
@@ -89,8 +89,8 @@ describe("computeTeamScore", () => {
   it("人数ハンデ: penaltyScale でペナルティが緩む", () => {
     const ladder = [1000, 2000]; // a を挟む2つの数字。r = 2、log2(2)=1
     const a = 1414;
-    const base = computeTeamScore(ladder, a, { c: 20, pitariBonus: 20, unit: 1, penaltyScale: 1 });
-    const handi = computeTeamScore(ladder, a, { c: 20, pitariBonus: 20, unit: 1, penaltyScale: 0.5 });
+    const base = computeTeamScore(ladder, a, { c: 20, pitariBonus: 10, unit: 1, penaltyScale: 1 });
+    const handi = computeTeamScore(ladder, a, { c: 20, pitariBonus: 10, unit: 1, penaltyScale: 0.5 });
     expect(base.score).toBe(10); // 30 - 20*1*1
     expect(handi.score).toBe(20); // 30 - 20*0.5*1
   });

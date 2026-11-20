@@ -3,6 +3,7 @@
 // 1 枚のキャンバス(SVG)に描くだけ。見た目を変えるときは config を編集する。
 
 import katex from "katex";
+import seatingImage from "./assets/seating.jpg";
 import { formatNumber } from "./format";
 import { qrSvg } from "./qr";
 import {
@@ -327,6 +328,11 @@ function renderSlide(slide: Slide): string {
 export function buildCoverSlide(): string {
   const inner = COVER.elements.map(element).join("");
   return `<div class="proj-slide proj-cover">${canvas(inner)}</div>`;
+}
+
+/** 座席表スライド。手描きの座席画像(src/assets/seating.jpg)をそのまま全面に出す。 */
+export function buildSeatingSlide(): string {
+  return `<div class="proj-slide proj-seating"><img class="seating-img" src="${seatingImage}" alt="座席表" /></div>`;
 }
 
 /** お題スライドの 1 要素(HTML を foreignObject で座標に置く)。y は左上。 */

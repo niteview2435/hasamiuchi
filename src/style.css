@@ -493,6 +493,18 @@ body.view-projection #app {
   padding: 2vmin;
 }
 
+/* 座席表スライド(手描き画像をそのまま全面に出す) */
+.proj-seating {
+  align-items: center;
+  justify-content: center;
+  padding: 2vmin;
+}
+.seating-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 /* お題スライド(中身・座標は slides.config.ts の QUESTION)。
    howto と同じキャンバスに載せ、各要素は foreignObject で座標配置する。 */
 .proj-question {

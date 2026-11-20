@@ -18,6 +18,7 @@ import {
   exportStateJson,
   getState,
   importStateJson,
+  replaceState,
   update,
 } from "./state";
 import { qrSvg } from "./qr";
@@ -25,6 +26,7 @@ import { getTransport, submissionKey } from "./transport";
 import type { SessionBroadcast } from "./transport";
 import type { AppState, Question } from "./types";
 import {
+  createDefaultState,
   groupLetters,
   makeEmptyRound,
   resizeRound,
@@ -123,6 +125,17 @@ function renderSettings(state: AppState): string {
       <p class="muted">本番の正解はリポジトリに入れません。司会PCのローカルJSONを読み込みます。</p>
       <input type="file" accept="application/json,.json" data-question-file />
       <div data-question-list>${qList}</div>
+    </section>
+
+    <section class="panel">
+      <h2>新しい大会を始める</h2>
+      <p class="muted">テストプレイなどの状態を消して、初期状態から始め直します。
+        グループ名と人数は残し、ルール設定(c・ピタリ賞・人数ハンデ)は既定値に戻ります。
+        お題・入力・ラウンドは消えるので、<strong>お題ファイルは初期化のあとで読み込み直してください</strong>。
+        念のため、先に右上の「エクスポート」でバックアップを取っておくと安心です。</p>
+      <div class="btn-row">
+        <button data-new-tournament class="primary">新しい大会を始める</button>
+      </div>
     </section>`;
 }
 
@@ -137,6 +150,15 @@ function renderHowtoTab(state: AppState): string {
   ).join("");
 
   return `
+    <section class="panel">
+      <h2>開始前</h2>
+      <p class="muted">座席表 → 表紙(ブランク)→ ルール説明 の順に出します。</p>
+      <div class="btn-row">
+        <button data-seating-open class="${p.screen === "seating" ? "primary" : ""}">投影に座席表を表示</button>
+        <button data-cover-open class="${p.screen === "blank" ? "primary" : ""}">投影に表紙を表示</button>
+      </div>
+    </section>
+
     <section class="panel">
       <h2>ルール説明スライド</h2>
       <p class="muted">人のアイコンと具体例(富士山の登山者数)で、1人ずつ数字を出して正解をはさむ流れを見せます。「次へ」を押すたびに 1 人ずつ進みます。</p>
@@ -501,6 +523,7 @@ export function mountControl(root: HTMLElement): void {
     const state = getState();
     roundLabel.textContent = `第 ${state.currentRound + 1} / ${state.rounds.length} ラウンド`;
     const screenName: Record<string, string> = {
+      seating: "座席表",
       blank: "ブランク",
       howto: "ルール説明",
       question: "お題",
@@ -598,6 +621,17 @@ export function mountControl(root: HTMLElement): void {
     main.querySelector<HTMLInputElement>("[data-handicap]")?.addEventListener("change", (e) => {
       update((s) => (s.settings.handicap = (e.target as HTMLInputElement).checked));
     });
+    main.querySelector("[data-new-tournament]")?.addEventListener("click", () => {
+      if (!confirm("お題・入力・ラウンド・ルール設定を消して、新しい大会を始めます(グループ名と人数は残します)。よろしいですか?")) return;
+      const prev = getState().settings;
+      const next = createDefaultState();
+      next.settings.groups = [...prev.groups];
+      next.settings.runnerCounts = prev.groups.map((_, i) => prev.runnerCounts[i] ?? 8);
+      next.rounds = [makeEmptyRound(next.settings.runnerCounts)];
+      replaceState(next);
+      refreshChrome();
+      renderActive();
+    });
     main.querySelector<HTMLInputElement>("[data-question-file]")?.addEventListener("change", async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -619,6 +653,16 @@ export function mountControl(root: HTMLElement): void {
       });
       renderActive();
     };
+    main.querySelector("[data-seating-open]")?.addEventListener("click", () => {
+      update((s) => (s.projection.screen = "seating"));
+      refreshChrome();
+      renderActive();
+    });
+    main.querySelector("[data-cover-open]")?.addEventListener("click", () => {
+      update((s) => (s.projection.screen = "blank"));
+      refreshChrome();
+      renderActive();
+    });
     main.querySelector("[data-howto-open]")?.addEventListener("click", () => {
       update((s) => (s.projection.screen = "howto"));
       renderActive();

@@ -3,7 +3,13 @@
 
 import { buildLadderChart, type ChartGroup } from "./chart";
 import { formatNumber, formatScore } from "./format";
-import { buildCoverSlide, buildHowtoSlide, buildQuestionSlide, buildSubmitSlide } from "./slides";
+import {
+  buildCoverSlide,
+  buildHowtoSlide,
+  buildQuestionSlide,
+  buildSeatingSlide,
+  buildSubmitSlide,
+} from "./slides";
 import { computeRoundResults, cumulativeTotals, type GroupResult } from "./results";
 import { subscribe } from "./state";
 import type { AppState } from "./types";
@@ -267,6 +273,9 @@ export function mountProjection(root: HTMLElement): void {
   const render = (state: AppState): void => {
     let html: string;
     switch (state.projection.screen) {
+      case "seating":
+        html = buildSeatingSlide();
+        break;
       case "howto":
         html = buildHowtoSlide(state.projection.howtoStep);
         break;

@@ -347,7 +347,7 @@ export const SLIDES: Slide[] = [
       { kind: "rich", x: 785, y: 440, size: 22, color: "muted", md: "同数なら $p=1$ で無影響。ピタリ賞のボーナスには掛からない。" },
 
       { kind: "text", text: "ピタリ賞", x: 850, y: 540, size: 30, color: "accent", weight: 900 },
-      { kind: "text", text: "正解を丸めた値に一致で +20 点", x: 850, y: 590, size: 26, weight: 700 },
+      { kind: "text", text: "正解を丸めた値に一致で +10 点", x: 850, y: 590, size: 26, weight: 700 },
 
       { kind: "text", text: "早見表(c = 20)", x: 850, y: 652, size: 30, color: "accent", weight: 900 },
       { kind: "text", text: "比 r", x: 870, y: 706, size: 24, color: "muted" },

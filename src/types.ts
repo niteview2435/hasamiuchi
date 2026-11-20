@@ -18,7 +18,7 @@ export interface Settings {
   runnerCounts: number[];
   /** 得点係数 c(デフォルト20)。 */
   c: number;
-  /** ピタリ賞の点数(デフォルト20)。 */
+  /** ピタリ賞の点数(デフォルト10)。 */
   pitariBonus: number;
   /** お題表示にタイマーを出すか。 */
   timerEnabled: boolean;
@@ -35,7 +35,7 @@ export interface Round {
   ladders: (number | null)[][];
 }
 
-export type ProjectionScreen = "blank" | "howto" | "question" | "reveal" | "ranking" | "submit";
+export type ProjectionScreen = "seating" | "blank" | "howto" | "question" | "reveal" | "ranking" | "submit";
 
 export interface ProjectionState {
   screen: ProjectionScreen;
@@ -109,12 +109,13 @@ export function createDefaultState(): AppState {
   const runnerCounts = groups.map(() => 8);
   return {
     version: STATE_VERSION,
-    settings: { groups, runnerCounts, c: 20, pitariBonus: 20, timerEnabled: true, handicap: true },
+    settings: { groups, runnerCounts, c: 20, pitariBonus: 10, timerEnabled: true, handicap: true },
     questions: [],
     rounds: [makeEmptyRound(runnerCounts)],
     currentRound: 0,
     projection: {
-      screen: "blank",
+      // 一番最初は座席表(全員が着席したら表紙=ブランクへ)。
+      screen: "seating",
       laddersRevealed: false,
       answerRevealed: false,
       zoomed: false,

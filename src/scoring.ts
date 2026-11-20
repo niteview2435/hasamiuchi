@@ -4,7 +4,7 @@
 export interface ScoringConfig {
   /** 狭めることへのご褒美の強さ。デフォルト 20(仕様 1.5)。 */
   c: number;
-  /** ピタリ賞の点数。デフォルト 20(仕様 1.6)。 */
+  /** ピタリ賞の点数。デフォルト 10(仕様 1.6)。 */
   pitariBonus: number;
   /**
    * 回答単位。ピタリ賞は「正解をこの単位に丸めた値」への一致で成立する。
@@ -22,7 +22,7 @@ export interface ScoringConfig {
 
 export const DEFAULT_SCORING: ScoringConfig = {
   c: 20,
-  pitariBonus: 20,
+  pitariBonus: 10,
   unit: 1,
   penaltyScale: 1,
 };
