@@ -1037,6 +1037,11 @@ body.view-submit {
   font-weight: 700;
   color: var(--muted);
 }
+/* グループ選択。見出しの罫線にくっつかないよう少し下げる。 */
+.submit-pick {
+  display: block;
+  margin-top: 1rem;
+}
 .submit-open {
   font-weight: 700;
   color: var(--gold);
