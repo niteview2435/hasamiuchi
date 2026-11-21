@@ -331,20 +331,20 @@ export const SLIDES: Slide[] = [
 
       // ---- 左列:得点計算(見出し＋インライン数式でゆったり) ----
       { kind: "text", text: "記号", x: 90, y: 300, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 90, y: 338, size: 28, md: "$x_1 < x_2 < \\cdots < x_m$   (正解 $a$、係数 $c=20$)" },
+      { kind: "rich", x: 180, y: 380, size: 28, md: "$x_1 < x_2 < \\cdots < x_m$   (正解 $a$、係数 $c=20$)" },
 
       { kind: "text", text: "挟んだ比 r", x: 90, y: 462, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 90, y: 500, size: 32, md: "$x_k < a < x_{k+1}\\quad\\rightarrow\\quad r = \\dfrac{x_{k+1}}{x_k}$" },
+      { kind: "rich", x: 180, y: 572, size: 32, md: "$x_k < a < x_{k+1}\\quad\\rightarrow\\quad r = \\dfrac{x_{k+1}}{x_k}$" },
 
       { kind: "text", text: "素点 S", x: 90, y: 652, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 90, y: 660, size: 32, md: "$S = \\max(1,\\ 30 - c\\log_2 r)$" },
-      { kind: "rich", x: 90, y: 740, size: 23, color: "muted", md: "外れ $=0$ 点 / 一致 $=30$ 点 / 挟めれば最低 $1$ 点" },
+      { kind: "rich", x: 180, y: 782, size: 32, md: "$S = \\max(1,\\ 30 - c\\log_2 r)$" },
+      { kind: "rich", x: 180, y: 872, size: 23, color: "muted", md: "外れ $=0$ 点 / 一致 $=30$ 点 / 挟めれば最低 $1$ 点" },
 
       // ---- 右列:人数ハンデ・ピタリ賞・早見表 ----
       { kind: "text", text: "人数ハンデ", x: 850, y: 290, size: 30, color: "accent", weight: 900 },
-      { kind: "rich", x: 850, y: 310, size: 26, md: "$p = \\dfrac{m_i-1}{m_{\\max}-1}$ を素点のペナルティに掛ける" },
-      { kind: "rich", x: 850, y: 385, size: 26, md: "$S = \\max(1,\\ 30 - c\\,p\\log_2 r)$" },
-      { kind: "rich", x: 785, y: 440, size: 22, color: "muted", md: "同数なら $p=1$ で無影響。ピタリ賞のボーナスには掛からない。" },
+      { kind: "rich", x: 1100, y: 362, size: 26, md: "$p = \\dfrac{m_i-1}{m_{\\max}-1}$ を素点のペナルティに掛ける" },
+      { kind: "rich", x: 1100, y: 437, size: 26, md: "$S = \\max(1,\\ 30 - c\\,p\\log_2 r)$" },
+      { kind: "rich", x: 995, y: 502, size: 22, color: "muted", md: "同数なら $p=1$ で無影響。ピタリ賞のボーナスには掛からない。" },
 
       { kind: "text", text: "ピタリ賞", x: 850, y: 540, size: 30, color: "accent", weight: 900 },
       { kind: "text", text: "正解を丸めた値に一致で +10 点", x: 850, y: 590, size: 26, weight: 700 },

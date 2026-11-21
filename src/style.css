@@ -959,6 +959,9 @@ body.view-projection #app {
   font-weight: 900;
   font-size: 5vmin;
   margin: 0;
+  /* 文言だけ少し上へ(周りの配置は動かさない) */
+  position: relative;
+  top: -1vmin;
 }
 .submit-slide-qr {
   width: 42vmin;
@@ -978,7 +981,7 @@ body.view-projection #app {
   list-style: none;
   counter-reset: step;
   padding: 0;
-  margin: 0;
+  margin: 6vmin 0 0; /* QR との間を少し空ける(下の URL もいっしょに下がる) */
   font-size: 2.6vmin;
   font-weight: 700;
 }
