@@ -956,18 +956,25 @@ export function mountControl(root: HTMLElement): void {
     });
   });
 
-  root.querySelector("[data-round-prev]")?.addEventListener("click", () => {
+  // ラウンドを移ったら、前のラウンドの公開状態を持ち越さない。結果画面のまま
+  // 移ると次ラウンドの正解が投影に出てしまうので、お題・結果画面なら表紙に戻す。
+  const moveRound = (delta: number): void => {
     update((s) => {
-      if (s.currentRound > 0) s.currentRound--;
+      const next = Math.max(0, Math.min(s.rounds.length - 1, s.currentRound + delta));
+      if (next === s.currentRound) return;
+      s.currentRound = next;
+      const p = s.projection;
+      if (p.screen === "reveal" || p.screen === "question") p.screen = "blank";
+      p.laddersRevealed = false;
+      p.answerRevealed = false;
+      p.zoomed = false;
+      p.zoomLevel = 1;
     });
+    refreshChrome();
     renderActive();
-  });
-  root.querySelector("[data-round-next]")?.addEventListener("click", () => {
-    update((s) => {
-      if (s.currentRound < s.rounds.length - 1) s.currentRound++;
-    });
-    renderActive();
-  });
+  };
+  root.querySelector("[data-round-prev]")?.addEventListener("click", () => moveRound(-1));
+  root.querySelector("[data-round-next]")?.addEventListener("click", () => moveRound(1));
   root.querySelector("[data-round-add]")?.addEventListener("click", () => {
     update((s) => {
       s.rounds.push(makeEmptyRound(s.settings.runnerCounts));

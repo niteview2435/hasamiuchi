@@ -109,7 +109,16 @@ function targetZoom(results: GroupResult[], answer: number): number {
   const targetSpan = Math.log10(tight.max) - Math.log10(tight.min);
   const fullSpan = full.max - full.min;
   if (targetSpan <= 0 || fullSpan <= 0) return 1;
-  return Math.min(12, Math.max(1, fullSpan / targetSpan));
+  let z = fullSpan / targetSpan;
+  // zoomFocusAt は正解の位置を固定して上下を 1/z に縮める。正解が全体の端に
+  // 寄っていると、幅は足りても片側がはみ出して挟んだ数字が画面外に出るので、
+  // 上下それぞれで focusWindow が収まる倍率に抑える。
+  const p = Math.log10(answer);
+  const tLo = Math.log10(tight.min);
+  const tHi = Math.log10(tight.max);
+  if (p > tLo) z = Math.min(z, (p - full.min) / (p - tLo));
+  if (tHi > p) z = Math.min(z, (full.max - p) / (tHi - p));
+  return Math.min(MAX_ZOOM, Math.max(1, z));
 }
 
 /** 拡大率の上限(スライダー・自動フィット共通)。 */
